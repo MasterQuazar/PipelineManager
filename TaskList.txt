@@ -1,0 +1,62 @@
+==============================================================
+
+████████╗ █████╗ ███████╗██╗  ██╗██╗     ██╗███████╗████████╗
+╚══██╔══╝██╔══██╗██╔════╝██║ ██╔╝██║     ██║██╔════╝╚══██╔══╝
+   ██║   ███████║███████╗█████╔╝ ██║     ██║███████╗   ██║   
+   ██║   ██╔══██║╚════██║██╔═██╗ ██║     ██║╚════██║   ██║   
+   ██║   ██║  ██║███████║██║  ██╗███████╗██║███████║   ██║   
+   ╚═╝   ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚══════╝╚═╝╚══════╝   ╚═╝   
+==============================================================
+
+
+
+
+DONE :
+	- files browser system
+	- settings system
+	- export publish files system
+	- logs premice
+	- rough interface
+	- export edit files work in progress
+	- rough thumnails system
+
+
+
+
+
+
+
+
+WORK IN PROGRESS :
+	- GUI version 2
+	- finish the thumbnails system
+	- optimize the files searching system
+		- by name
+		- by extension
+		- by keyword
+			- in the project
+			- in the whole pipeline
+			- ON THE COMPUTER??
+	- archive system
+	- logs system (pushed)
+	- export edit files automation?
+		same location folder first
+		same project folder first
+	- save project template?
+	- create new item project
+
+
+	- search for textures system
+	- connect textures system
+
+	- archive in pipeline
+	- archive in project
+	- search for archive
+	- search in archive
+		- move item
+		- put item in
+		- remove item
+		- delete archive
+		- rename archive
+
+	- create Licensing system?
