@@ -28,6 +28,7 @@ DONE :
 
 
 WORK IN PROGRESS :
+	- move project elsewhere
 	- replace items by reference system
 	- GUI version 2
 	- finish the thumbnails system
