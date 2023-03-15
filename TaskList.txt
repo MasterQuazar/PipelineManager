@@ -48,6 +48,9 @@ WORK IN PROGRESS :
 
 	- search for textures system
 	- connect textures system
+	- save texture node editor hierarchy
+	- create texture archive on the computer
+	- create render layers
 
 	- archive in pipeline
 	- archive in project
