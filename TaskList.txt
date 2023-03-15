@@ -28,6 +28,7 @@ DONE :
 
 
 WORK IN PROGRESS :
+	- replace items by reference system
 	- GUI version 2
 	- finish the thumbnails system
 	- optimize the files searching system
