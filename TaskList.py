@@ -29,6 +29,8 @@ DONE :
 
 
 WORK IN PROGRESS :
+	- move project elsewhere
+	- replace items by reference system
 	- GUI version 2
 	- finish the thumbnails system
 	- optimize the files searching system
@@ -49,6 +51,9 @@ WORK IN PROGRESS :
 
 	- search for textures system
 	- connect textures system
+	- save texture node editor hierarchy
+	- create texture archive on the computer
+	- create render layers
 
 	- archive in pipeline
 	- archive in project
@@ -61,4 +66,7 @@ WORK IN PROGRESS :
 		- rename archive
 
 	- create Licensing system?
+<<<<<<< HEAD:TaskList.py
 """
+=======
+>>>>>>> eb15f57cb14884eb2398f9b08a74a676fa36079f:TaskList.txt
