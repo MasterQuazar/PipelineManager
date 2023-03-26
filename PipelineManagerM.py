@@ -141,10 +141,10 @@ class PipelineGuiApplication(PipelineApplication, PipelineShaderApplication):
 		self.settings_dictionnary = {}
 		self.additionnal_settings = {}
 		
-		try:
-			self.settings, self.settings_dictionnary, self.additionnal_settings = self.load_settings_function()
-		except:
-			mc.warning("Impossible to load settings file!")
+		#try:
+		self.settings, self.settings_dictionnary, self.additionnal_settings = self.load_settings_function()
+		#except:
+			#mc.warning("Impossible to load settings file!")
 		#self.add_log_content_function("Settings loaded")
 	
 
@@ -268,14 +268,17 @@ class PipelineGuiApplication(PipelineApplication, PipelineShaderApplication):
 
 
 		#SEARCHBAR
-		self.searchbar_checkbox = mc.checkBox(label="Limit research to project", value=False, parent=self.assets_main_leftcolumn)
-		self.main_assets_searchbar = mc.textField(parent=self.assets_main_leftcolumn, changeCommand=self.searchbar_function)
+		self.searchbar_checkbox = mc.checkBox(label="Limit research to project", value=False, parent=self.assets_main_leftcolumn, changeCommand=self.save_additionnal_settings_function)
+		self.scenes_checkbox = mc.checkBox(label="Search for 3D Scenes", value=True, parent=self.assets_main_leftcolumn, changeCommand=self.save_additionnal_settings_function)
+		self.items_checkbox = mc.checkBox(label="Search for 3D Items", value=False, parent=self.assets_main_leftcolumn, changeCommand=self.save_additionnal_settings_function)
+		self.textures_checkbox = mc.checkBox(label="Search for Textures", value=False, parent=self.assets_main_leftcolumn, changeCommand=self.save_additionnal_settings_function)
+		self.main_assets_searchbar = mc.textField(parent=self.assets_main_leftcolumn, changeCommand=self.searchbar_function, enterCommand=self.searchbar_function)
 		mc.text(label="3D Scene extension", parent=self.assets_main_leftcolumn)
-		self.assets_scene_extension_textfield = mc.textField(parent=self.assets_main_leftcolumn)
+		self.assets_scene_extension_textfield = mc.textField(parent=self.assets_main_leftcolumn, enterCommand=self.save_additionnal_settings_function)
 		mc.text(label="3D Exported Items extension", parent=self.assets_main_leftcolumn)
-		self.assets_items_extension_textfield = mc.textField(parent=self.assets_main_leftcolumn)
+		self.assets_items_extension_textfield = mc.textField(parent=self.assets_main_leftcolumn, enterCommand=self.save_additionnal_settings_function)
 		mc.text(label="Textures extension", parent=self.assets_main_leftcolumn)
-		self.assets_textures_extension_textfield = mc.textField(parent=self.assets_main_leftcolumn)
+		self.assets_textures_extension_textfield = mc.textField(parent=self.assets_main_leftcolumn, enterCommand=self.save_additionnal_settings_function)
 
 		#IMAGE BOX
 		mc.separator(style="none", height=10)
@@ -308,10 +311,17 @@ class PipelineGuiApplication(PipelineApplication, PipelineShaderApplication):
 
 
 		if self.project_path != None:
-		
+			mc.checkBox(self.searchbar_checkbox, edit=True, value=self.additionnal_settings["checkboxValues"][0])
+			mc.checkBox(self.scenes_checkbox, edit=True, value=self.additionnal_settings["checkboxValues"][1])
+			mc.checkBox(self.items_checkbox, edit=True, value=self.additionnal_settings["checkboxValues"][2])
+			mc.checkBox(self.textures_checkbox, edit=True, value=self.additionnal_settings["checkboxValues"][3])
 			mc.textField(self.assets_scene_extension_textfield, edit=True, text=";".join(self.additionnal_settings["3dSceneExtension"]))
 			mc.textField(self.assets_items_extension_textfield, edit=True, text=";".join(self.additionnal_settings["3dItemExtension"]))
 			mc.textField(self.assets_textures_extension_textfield, edit=True, text=";".join(self.additionnal_settings["texturesExtension"]))
+			"""
+				except:
+					mc.warning("Impossible to launch GUI Presets on Mai page!")
+			"""
 
 
 

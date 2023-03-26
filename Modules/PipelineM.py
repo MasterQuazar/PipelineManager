@@ -65,6 +65,7 @@ class PipelineApplication:
 					self.settings_dictionnary = pickle.load(read_file)
 					self.additionnal_settings = pickle.load(read_file)
 				
+				print(self.additionnal_settings)
 				print("Settings loaded successfully!")
 			
 			except:
@@ -212,7 +213,10 @@ class PipelineApplication:
 			mc.error("Impossible to save the settings file\nYou have to set the pipeline folder first!")
 		else:
 			#get content of the pipeline path
-			path = mc.textField(self.project_label, query=True, text=True)
+			try:
+				path = mc.textField(self.project_label, query=True, text=True)
+			except:
+				path = self.project_path
 			if os.path.isdir(path)==False:
 				mc.error("You have to define a valid pipeline folder first!")
 				return
@@ -255,9 +259,10 @@ class PipelineApplication:
 			"shots":["[project]_[key]_[sqversion]_[shversion]", "shots", None]
 		}
 		self.additionnal_settings = {
-			"3dSceneExtension":["ma","mb"],
-			"3dItemExtension":["obj", "fbx"],
-			"texturesExtension":["png", "tif","tiff","tex", "exr", "jpg"],
+			"checkboxValues":[False, True, False, False],
+			"3dSceneExtension":[".ma",".mb"],
+			"3dItemExtension":[".obj", ".fbx"],
+			"texturesExtension":[".png", ".tif",".tiff",".tex", ".exr", ".jpg"],
 			"mayaProjectName":"maya",
 			"editPublishFolder":["edit", "publish"]
 		}
@@ -597,9 +602,10 @@ class PipelineApplication:
 		}
 
 		self.default_additional_settings = {
-			"3dSceneExtension":["ma","mb"],
-			"3dItemExtension":["obj", "fbx"],
-			"texturesExtension":["png", "tif","tiff","tex", "exr", "jpg"],
+			"checkboxValues":[False, True, False, False],
+			"3dSceneExtension":[".ma",".mb"],
+			"3dItemExtension":[".obj", ".fbx"],
+			"texturesExtension":[".png", ".tif",".tiff",".tex", ".exr", ".jpg"],
 			"mayaProjectName":"maya",
 			"editPublishFolder":["edit", "publish"]
 		}
@@ -1196,15 +1202,30 @@ class PipelineApplication:
 	def searchbar_function(self, event):
 		#or limit to the project?
 		#search for files in the whole pipeline?
-		checkbox_value = mc.checkBox(self.searchbar_checkbox, query=True, value=True)
+		final_extension_list = []
+
+		project_limit = mc.checkBox(self.searchbar_checkbox, query=True, value=True)
+		scenes_limit = mc.checkBox(self.scenes_checkbox, query=True, value=True)
+		items_limit = mc.checkBox(self.items_checkbox, query=True, value=True)
+		textures_limit = mc.checkBox(self.textures_checkbox, query=True, value=True)
 		searchbar_content = mc.textField(self.main_assets_searchbar, query=True, text=True)
+
+		if scenes_limit == True:
+			final_extension_list = final_extension_list + self.additionnal_settings["3dSceneExtension"]
+		if items_limit == True:
+			final_extension_list = final_extension_list + self.additionnal_settings["3dItemExtension"]
+		if textures_limit ==True:
+			final_extension_list = final_extension_list + self.additionnal_settings["texturesExtension"]
+
+
+		print(final_extension_list)
 
 		if (self.letter_verification_function(searchbar_content)==False) or (self.letter_verification_function(searchbar_content)==None):
 			mc.error("Nothing to search!")
 			return
 		searchbar_content = searchbar_content.split(";")
 
-		if checkbox_value == True:
+		if project_limit == True:
 			starting_folder = mc.workspace(query=True, active=True)
 			if starting_folder == None:
 				mc.error("Impossible to search in project!")
@@ -1223,6 +1244,10 @@ class PipelineApplication:
 				d.remove("PipelineManagerData")
 			for file in f:
 				valid=True
+
+				if len(final_extension_list) != 0:
+					if (os.path.splitext(file)[1] in final_extension_list) != True:
+						continue
 				for keyword in searchbar_content:
 					if (keyword in file) == False:
 						valid=False 
@@ -1230,7 +1255,7 @@ class PipelineApplication:
 				if valid == True:
 					file_list.append(file)
 
-		
+		print(file_list)
 		mc.textScrollList(self.result_list, edit=True, removeAll=True, append=file_list)
 
 
@@ -1409,6 +1434,40 @@ class PipelineApplication:
 		else:	
 			#save new picture of that scene
 			self.take_picture_function("test")	
+
+
+
+	def save_additionnal_settings_function(self, event):
+		#get value of each checkbox
+		searchbar_limit = mc.checkBox(self.searchbar_checkbox, query=True, value=True)
+		scenes = mc.checkBox(self.scenes_checkbox, query=True, value=True)
+		items = mc.checkBox(self.items_checkbox, query=True, value=True)
+		textures = mc.checkBox(self.textures_checkbox, query=True, value=True)
+
+		#get each extension list
+		scenes_extension_list = mc.textField(self.assets_scene_extension_textfield, query=True, text=True).split(";")
+		items_extension_list = mc.textField(self.assets_items_extension_textfield, query=True, text=True).split(";")
+		textures_extension_list = mc.textField(self.assets_textures_extension_textfield, query=True, text=True).split(";")
+
+		self.additionnal_settings["checkboxValues"] = [searchbar_limit, scenes, items, textures]
+		self.additionnal_settings["3dSceneExtension"] = scenes_extension_list
+		self.additionnal_settings["3dItemExtension"] = items_extension_list
+		self.additionnal_settings["texturesExtension"] = textures_extension_list
+
+		"""
+		self.default_additional_settings = {
+			"checkboxValues":[False, True, False, False],
+			"3dSceneExtension":["ma","mb"],
+			"3dItemExtension":["obj", "fbx"],
+			"texturesExtension":["png", "tif","tiff","tex", "exr", "jpg"],
+			"mayaProjectName":"maya",
+			"editPublishFolder":["edit", "publish"]
+		}
+		"""
+		self.save_settings_file()
+		mc.warning("Saved!")
+
+
 
 
 
