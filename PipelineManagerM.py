@@ -70,7 +70,7 @@ class PipelineGuiApplication(PipelineApplication, PipelineShaderApplication):
 		#check if the module list file exist
 		self.project_path = mc.workspace(query=True, rd=True)
 
-		self.window_width = 650
+		self.window_width = 750
 		self.window_height=700
 
 		letter = 'abcdefghijklmnopqrstuvwxyz'
@@ -93,7 +93,6 @@ class PipelineGuiApplication(PipelineApplication, PipelineShaderApplication):
 			".vdb"]
 
 		self.log_list_content = []
-		self.settings = {}
 
 		self.texture_to_connect_list = []
 		#load settings stored in files
@@ -138,10 +137,12 @@ class PipelineGuiApplication(PipelineApplication, PipelineShaderApplication):
 
 		#self.shader_init_function()
 
-
+		self.settings = {}
+		self.settings_dictionnary = {}
+		self.additionnal_settings = {}
 		
 		try:
-			self.settings, self.settings_dictionnary = self.load_settings_function()
+			self.settings, self.settings_dictionnary, self.additionnal_settings = self.load_settings_function()
 		except:
 			mc.warning("Impossible to load settings file!")
 		#self.add_log_content_function("Settings loaded")
@@ -241,14 +242,83 @@ class PipelineGuiApplication(PipelineApplication, PipelineShaderApplication):
 
 
 		self.assets_search_frame = mc.frameLayout(label="Search for assets", parent=self.asset_main_scroll, collapsable=True, collapse=False, width=self.window_width)
-		self.assets_search_frame_rowcolumn = mc.rowColumnLayout(numberOfColumns=2, columnWidth=((1, self.window_width/2), (2, self.window_width/2)), parent=self.assets_search_frame)
+
+
+		self.assets_main_rowcolumn = mc.rowColumnLayout(parent=self.assets_search_frame, numberOfColumns=2, columnWidth=((1, self.window_width/5)))
+		self.assets_main_leftcolumn = mc.columnLayout(adjustableColumn=True, parent=self.assets_main_rowcolumn)
+		self.assets_main_rightcolumn = mc.columnLayout(adjustableColumn=True, parent=self.assets_main_rowcolumn)
+
+
+
+
+
+		mc.rowColumnLayout(self.assets_main_rowcolumn, edit=True, adjustableColumn=2)
+		if self.project_path !="None":
+			for key, value in self.settings.items():
+				self.type_list_value.append(key)
+
+		self.assets_prod_column = mc.rowColumnLayout(numberOfColumns=4, parent=self.assets_main_rightcolumn, columnWidth=((1, self.window_width/6), (2, self.window_width/6), (3, self.window_width/6)))
+		self.type_list=mc.textScrollList(parent=self.assets_prod_column, height=self.window_height, selectCommand=self.display_new_list_function, append=self.type_list_value)
+		self.name_list=mc.textScrollList(parent=self.assets_prod_column, height=self.window_height, selectCommand=self.display_new_list_function)
+		self.kind_list=mc.textScrollList(parent=self.assets_prod_column, height=self.window_height, selectCommand=self.display_new_list_function, append=self.file_type)
+		self.result_list=mc.textScrollList(parent=self.assets_prod_column, height=self.window_height, doubleClickCommand=self.open_location_function, selectCommand=self.search_for_thumbnail_function)
 
 		
-		self.main_assets_searchbar = mc.textField(parent=self.assets_search_frame_rowcolumn, changeCommand=self.searchbar_function)
-		self.searchbar_checkbox = mc.checkBox(align="right",label="Limit research to current project", value=False, parent=self.assets_search_frame_rowcolumn)
-		self.image_box = mc.image(parent=self.assets_search_frame_rowcolumn, visible=True, backgroundColor=[0.2,0.2,0.2], height=self.window_width/4)
+		mc.rowColumnLayout(self.assets_prod_column, edit=True, adjustableColumn=4)
+
+
+		#SEARCHBAR
+		self.searchbar_checkbox = mc.checkBox(label="Limit research to project", value=False, parent=self.assets_main_leftcolumn)
+		self.main_assets_searchbar = mc.textField(parent=self.assets_main_leftcolumn, changeCommand=self.searchbar_function)
+		mc.text(label="3D Scene extension", parent=self.assets_main_leftcolumn)
+		self.assets_scene_extension_textfield = mc.textField(parent=self.assets_main_leftcolumn)
+		mc.text(label="3D Exported Items extension", parent=self.assets_main_leftcolumn)
+		self.assets_items_extension_textfield = mc.textField(parent=self.assets_main_leftcolumn)
+		mc.text(label="Textures extension", parent=self.assets_main_leftcolumn)
+		self.assets_textures_extension_textfield = mc.textField(parent=self.assets_main_leftcolumn)
+
+		#IMAGE BOX
+		mc.separator(style="none", height=10)
+		self.image_box = mc.image(parent=self.assets_main_leftcolumn, visible=True, backgroundColor=[0.2,0.2,0.2], height=self.window_width/5, width=self.window_width/5)
+		mc.button(label="Save Thumbnail", parent=self.assets_main_leftcolumn, command=self.take_picture_function)
+		#RENAME
+		self.assets_rename_frame = mc.frameLayout(label = "Rename files", parent=self.assets_main_leftcolumn, collapsable=True, collapse=True)
+		mc.text("Content to replace",parent=self.assets_rename_frame)
+		self.rename_replace_content = mc.textField(parent=self.assets_rename_frame)
+		mc.text("Content to put instead",parent=self.assets_rename_frame)
+		self.rename_replaceby_content = mc.textField(parent=self.assets_rename_frame)
+		mc.button(label="Rename Files", parent=self.assets_rename_frame, command=self.replace_filename_function)
+
+
+		mc.separator(parent=self.assets_main_leftcolumn, height=10, style="none")
+		mc.button(label="Save Scene", parent=self.assets_main_leftcolumn, command=self.save_current_scene_function)
+		mc.button(label="Set Project", parent=self.assets_main_leftcolumn, command=self.set_project_function)
+
+		#IMPORT
+		mc.separator(parent=self.assets_main_leftcolumn, height=10, style="none")
+		self.assets_import_frame = mc.frameLayout(label = "Import files", parent=self.assets_main_leftcolumn, collapsable=True, collapse=False)
+		mc.button(label="Import in scene", parent=self.assets_import_frame, command=partial(self.import_in_scene_function, False))
+		mc.button(label="Import as reference", parent=self.assets_import_frame, command=partial(self.import_in_scene_function, True))
+
+		#ARCHIVE
+		mc.separator(parent=self.assets_main_leftcolumn, height=10, style="none")
+		self.assets_archive_frame = mc.frameLayout(label="Archive files", parent=self.assets_main_leftcolumn, collapsable=True, collapse=True)
+		mc.button(label="Archive in current pipeline", parent=self.assets_archive_frame)
+		mc.button(label="Archive in current project", parent=self.assets_archive_frame)
+
+
+		if self.project_path != None:
 		
-		
+			mc.textField(self.assets_scene_extension_textfield, edit=True, text=";".join(self.additionnal_settings["3dSceneExtension"]))
+			mc.textField(self.assets_items_extension_textfield, edit=True, text=";".join(self.additionnal_settings["3dItemExtension"]))
+			mc.textField(self.assets_textures_extension_textfield, edit=True, text=";".join(self.additionnal_settings["texturesExtension"]))
+
+
+
+
+
+		"""
+
 
 
 		#self.prod_scroll = mc.scrollLayout(horizontalScrollBarThickness=16, parent=self.assets_search_frame,height=self.window_height/2)	
@@ -265,10 +335,13 @@ class PipelineGuiApplication(PipelineApplication, PipelineShaderApplication):
 		if self.project_path !="None":
 			for key, value in self.settings.items():
 				self.type_list_value.append(key)
-			"""
+			
+
+			--------
 			for key, value in self.settings_dictionnary.items():
 		
-				self.type_list_value.append(key)"""
+				self.type_list_value.append(key)
+			--------
 
 		self.type_list = mc.textScrollList(allowMultiSelection=True, parent=self.prod_columns, height=self.window_height/2, selectCommand=self.display_new_list_function, append=self.type_list_value)
 		self.name_list = mc.textScrollList(allowMultiSelection=True, parent=self.prod_columns, height=self.window_height/2, selectCommand=self.display_new_list_function)
@@ -293,7 +366,7 @@ class PipelineGuiApplication(PipelineApplication, PipelineShaderApplication):
 		mc.button(label="Open File", parent=self.import_rowcolumn, command=self.open_file_function)
 		mc.button(label="Import in scene", parent=self.import_rowcolumn, command=partial(self.import_in_scene_function, False))
 		mc.button(label="Import as reference", parent=self.import_rowcolumn, command=partial(self.import_in_scene_function, True))	
-		mc.button(label="Archive in project", parent=self.import_rowcolumn, command=self.archive_in_project_function)
+		mc.button(label="Archive in project", parent=self.import_rowcolumn, command=self.archive_in_project_function)"""
 
 
 
@@ -413,18 +486,6 @@ class PipelineGuiApplication(PipelineApplication, PipelineShaderApplication):
 
 
 		self.settings_column = mc.columnLayout(adjustableColumn=True, parent=self.tabs)
-		#create two list (left and right)
-		#LEFT --> NAME OF THE SETTING
-		#RIGHT --> VALUE OF THE SYNTAX
-		self.settings_main_scroll = mc.scrollLayout(horizontalScrollBarThickness=8, parent=self.settings_column, resizeCommand=self.resize_command_function, width=self.window_width,height=self.window_height)
-
-		self.settings_file_frame = mc.frameLayout(label="Files settings", parent=self.settings_main_scroll, width=self.window_width, collapsable=True, collapse=False)
-		self.settings_file_scroll = mc.scrollLayout(horizontalScrollBarThickness=8, parent=self.settings_file_frame, height=self.window_height)
-		self.setting_rowcolumn1 = mc.rowColumnLayout(numberOfColumns=4, parent=self.settings_file_scroll, columnWidth=((1, self.window_width/6), (2, self.window_width/6), (3, self.window_width/6), (4, self.window_width/2)))
-		mc.text(label="Type name", parent=self.setting_rowcolumn1)
-		mc.text(label="Type syntax", parent=self.setting_rowcolumn1)
-		mc.text(label="Type keyword", parent=self.setting_rowcolumn1)
-		mc.text(label="Type default folder", parent=self.setting_rowcolumn1)
 
 		#create the setting key list
 		setting_key_list = []
@@ -437,106 +498,80 @@ class PipelineGuiApplication(PipelineApplication, PipelineShaderApplication):
 			setting_key_list.append(setting_key)
 			setting_value_list.append(setting_value[0])
 			setting_keyword_list.append(setting_value[1])
-
 			if setting_value[2] == None:
 				setting_default_folder_list.append("None")
 			else:
 				setting_default_folder_list.append(setting_value[2])
+		#create two list (left and right)
+		#LEFT --> NAME OF THE SETTING
+		#RIGHT --> VALUE OF THE SYNTAX
 
-		self.setting_type_list = mc.textScrollList(allowMultiSelection=False, parent=self.setting_rowcolumn1, append=setting_key_list, selectCommand=self.add_type_list_function)
-		self.setting_syntax_list = mc.textScrollList(allowMultiSelection=False, parent=self.setting_rowcolumn1, append=setting_value_list, selectCommand=self.add_content_in_textfield_function)
-		self.setting_keyword_list = mc.textScrollList(allowMultiSelection=False, parent=self.setting_rowcolumn1, append=setting_keyword_list)
-		self.settings_folder_list = mc.textScrollList(allowMultiSelection=False, parent=self.setting_rowcolumn1, append=setting_default_folder_list, selectCommand=self.define_default_folder_function)
+		self.settings_main_rowcolumn = mc.rowColumnLayout(numberOfColumns=2, columnWidth=((1, self.window_width/5), (2, self.window_width*(4/5))))
+		self.settings_left_column = mc.columnLayout(adjustableColumn=True, parent=self.settings_main_rowcolumn)
+		self.settings_right_column = mc.columnLayout(adjustableColumn=True, parent=self.settings_main_rowcolumn)
 
-		mc.separator(style="none", height=30, parent=self.settings_file_scroll)
-		self.settings_project_folder_column = mc.columnLayout(adjustableColumn=True, parent=self.settings_file_scroll, width=self.window_width/2)
-		mc.text(label="Common maya project name", parent=self.settings_project_folder_column)
-		self.settings_project_folder_textfield = mc.textField(parent=self.settings_project_folder_column)
-		mc.button(label="Save Common maya project name", parent=self.settings_project_folder_column, command=self.save_project_name_function)
+		mc.text(label="Common maya project name", parent=self.settings_left_column)
+		self.settings_project_folder_textfield = mc.textField(parent=self.settings_left_column)
 
+		mc.text(label="Edit folder name",parent=self.settings_left_column)
+		self.settings_editfolder_textfield = mc.textField(parent=self.settings_left_column)
+		mc.text(label="Publish folder name", parent=self.settings_left_column)
+		self.settings_publishfolder_textfield = mc.textField(parent=self.settings_left_column)
+		mc.button(label="Save folder preset",parent=self.settings_left_column, command=self.save_folder_preset_function)
 
-		mc.separator(style="none", height=20, parent=self.settings_file_scroll)
-		self.settings_folder_rowcolumn = mc.rowColumnLayout(numberOfColumns=2, columnWidth=((1, self.window_width/2), (2, self.window_width/2)), parent=self.settings_file_scroll)
-		mc.text(label="Edit folder name", parent=self.settings_folder_rowcolumn)
-		mc.text(label="Publish folder name", parent=self.settings_folder_rowcolumn)
-		self.settings_editfolder_textfield = mc.textField(parent=self.settings_folder_rowcolumn)
-		self.settings_publishfolder_textfield = mc.textField(parent=self.settings_folder_rowcolumn)
-		self.settings_folder_column = mc.columnLayout(parent=self.settings_folder_rowcolumn, adjustableColumn=True)
-		mc.button(label="Save folder preset", parent=self.settings_file_scroll, width=self.window_width, command=self.save_folder_preset_function)
-		mc.separator(style="none", height=40, parent=self.settings_file_scroll)
+		mc.separator(style="singleDash", height=15, parent=self.settings_left_column)
 
-		for key, value in self.settings.items():
-			mc.textField(self.settings_project_folder_textfield, edit=True, text=value[4])
-			if type(value[3]) == list:
-				if value[3][0] != None:
-					mc.textField(self.settings_editfolder_textfield, edit=True, text=str(value[3][0]))
-					
-				if value[3][1] != None:
-					mc.textField(self.settings_publishfolder_textfield, edit=True, text=str(value[3][1]))
-					
-				break
+		self.setting_type_textfield = mc.textField(parent=self.settings_left_column)
+		mc.button(label="Create file kind", parent=self.settings_left_column, command=self.create_type_function)
+		mc.button(label="Delete file kind", parent=self.settings_left_column, command=self.delete_type_function)
 
+		mc.separator(style="singleDash", height=15, parent=self.settings_left_column)
+		self.create_file_kind_textfield = mc.textField(parent=self.settings_left_column)
 
+		mc.button(label="Create file type", parent=self.settings_left_column, command=self.create_file_kind_function)
+		mc.button(label="Delete file type", parent=self.settings_left_column, command=self.delete_file_kind_function)
+		mc.button(label="Rename file type", parent=self.settings_left_column, command=self.rename_file_kind_function)
+
+		mc.separator(style="singleDash", height=15, parent=self.settings_left_column)
+
+		mc.button(label="Reset settings", parent=self.settings_left_column, command=self.reset_default_syntax_function)
 
 
-		self.setting_rowcolumn2 = mc.rowColumnLayout(numberOfColumns=2, columnWidth=((1, self.window_width/2), (2, self.window_width/2)), parent=self.settings_file_scroll)
-		
-		
+		self.settings_rowcolumn1 = mc.rowColumnLayout(numberOfColumns=3, columnWidth=((1, self.window_width*1/5), (2, self.window_width*1/5), (3, self.window_width*2/5)))
+		self.settings_column1 = mc.columnLayout(adjustableColumn=True, parent=self.settings_rowcolumn1)
+		self.settings_column2 = mc.columnLayout(adjustableColumn=True, parent=self.settings_rowcolumn1)
+		self.settings_column3 = mc.columnLayout(adjustableColumn=True, parent=self.settings_rowcolumn1)
+		self.settings_type_list = mc.textScrollList(allowMultiSelection=False, parent=self.settings_column1, append=setting_key_list, selectCommand=self.display_settings_informations_function)
+		self.settings_type_textscrolllist = mc.textScrollList(allowMultiSelection=True,parent=self.settings_column2)
+
+		mc.text(label="Syntax",parent=self.settings_column3, align="left")
+		self.setting_syntax_textfield = mc.textField(parent=self.settings_column3, enterCommand=self.save_syntax_function)
+
+		mc.text(label="Keyword", parent=self.settings_column3, align="left")
+		self.setting_keyword_textfield = mc.textField(parent=self.settings_column3, enterCommand=self.save_keyword_function)
+
+		mc.separator(style="none", height=15, parent=self.settings_column3)
+		#self.setting_folder_button = mc.button(label="Default folder",parent=self.settings_column3)
+
+
+		#add additionnal settings informations in GUI
+		if self.project_path != None:
+			try:
+				mc.textField(self.settings_project_folder_textfield, edit=True, text=self.additionnal_settings["mayaProjectName"])
+				mc.textField(self.settings_editfolder_textfield, edit=True, text=self.additionnal_settings["editPublishFolder"][0])
+				mc.textField(self.settings_publishfolder_textfield, edit=True, text=self.additionnal_settings["editPublishFolder"][1])
+			except:
+				pass
+		#mc.textField(self.settings_project_folder_textfield, edit=True, text=self.additionnal_settings["mayaProjectName"])
 
 
 
 
 
 
-		#define current type list
-		self.settings_type_textscrolllist = mc.textScrollList(allowMultiSelection=True, numberOfRows=6, parent=self.setting_rowcolumn2, selectCommand=self.select_type_function)
-		self.settings_type_columnlayout = mc.columnLayout(adjustableColumn=True, parent=self.setting_rowcolumn2)
-		#create type
-		#delete type
-		#ren type
-		#reset
-		mc.text(label="File kind Name", parent=self.settings_type_columnlayout)
-		self.settings_type_textfield = mc.textField(self.settings_type_columnlayout)
-		mc.button(label="Create File Kind", parent=self.settings_type_columnlayout, command=self.create_file_kind_function)
-		mc.button(label="Delete File Kind", parent=self.settings_type_columnlayout, command=self.delete_file_kind_function)
-		mc.button(label="Rename File Kind", parent=self.settings_type_columnlayout, command=self.rename_file_kind_function)
+
+
 	
-		mc.text(label="New type name", parent=self.setting_rowcolumn2)
-		mc.text(label="New type keyword", parent=self.setting_rowcolumn2)
-		self.settings_create_type_textfield = mc.textField(parent=self.setting_rowcolumn2)
-		self.settings_create_keyword_textfield = mc.textField(parent=self.setting_rowcolumn2)
-
-
-
-		self.setting_rowcolumn2button = mc.rowColumnLayout(numberOfColumns=3, parent=self.settings_file_scroll, columnWidth=((1, self.window_width/3), (2, self.window_width/3), (3, self.window_width/3)))
-		
-		mc.button(label="Save\nkeyword", parent=self.setting_rowcolumn2button, command=self.save_keyword_function)
-		mc.button(label="Create\nnew type", parent=self.setting_rowcolumn2button, command=self.create_type_function)
-		mc.button(label="Delete type", parent=self.setting_rowcolumn2button, command=self.delete_type_function)
-
-
-		self.setting_rowcolumn3 = mc.rowColumnLayout(numberOfColumns=3, parent=self.settings_file_scroll, width=self.window_width, columnWidth=((1, self.window_width/2-10), (2, self.window_width/4-10), (3, self.window_width/4-10)))
-		mc.text(label="New setting syntax", parent=self.setting_rowcolumn3)
-		mc.text(label="", parent=self.setting_rowcolumn3)
-		mc.text(label="", parent=self.setting_rowcolumn3)
-
-		self.setting_syntax_textfield = mc.textField(parent=self.setting_rowcolumn3)
-		mc.button(label="Save syntax", parent=self.setting_rowcolumn3, command=self.save_new_syntax_function)
-		mc.button(label="Reset default", parent=self.setting_rowcolumn3, command=self.reset_default_syntax_function)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 		self.log_column = mc.columnLayout(adjustableColumn=True, parent=self.tabs, height=self.window_height)
 		self.log_scroll = mc.scrollLayout(horizontalScrollBarThickness=16, parent=self.log_column, height=self.window_height, resizeCommand=self.resize_command_function)
 
@@ -562,6 +597,32 @@ class PipelineGuiApplication(PipelineApplication, PipelineShaderApplication):
 			self.message_thread.start()"""
 
 		mc.showWindow()
+
+
+
+
+	def display_settings_informations_function(self):
+		#get the textscrolllist selection
+		selection = mc.textScrollList(self.settings_type_list, query=True, si=True)
+		if selection != None:
+			for key, value in self.settings_dictionnary.items():
+				if key == selection[0]:
+					try:
+						mc.textScrollList(self.settings_type_textscrolllist, edit=True, removeAll=True, append=value)
+					except:
+						mc.warning("Impossible to display list!")
+						pass
+
+			for key, value in self.settings.items():
+				if key == selection[0]:
+					mc.textField(self.setting_syntax_textfield, edit=True, text=self.settings[key][0])
+					mc.textField(self.setting_keyword_textfield, edit=True, text=self.settings[key][1])
+					"""
+					if self.settings[key][2] != None:
+						mc.button(self.setting_folder_button, edit=True, label=self.settings[key][2])
+					else:
+						mc.button(self.setting_folder_button, edit=True, label="None")
+					"""
 
 
 
@@ -640,71 +701,6 @@ class PipelineGuiApplication(PipelineApplication, PipelineShaderApplication):
 				for element in type_list:
 					mc.menuItem(self.export_edit_type_menu, label=element)"""
 
-
-
-
-
-	def select_type_function(self):
-		#take the first item of the selection
-		selection = mc.textScrollList(self.settings_type_textscrolllist, query=True, si=True)[0]
-		mc.textField(self.settings_type_textfield, edit=True, text=selection)
-
-		
-
-	def add_type_list_function(self):
-		#get the first item of the selection
-		try:
-			selection = mc.textScrollList(self.setting_type_list, query=True, si=True)[0]	
-		except:
-			mc.error("You have to select something!")
-			return
-		else:
-			mc.textScrollList(self.settings_type_textscrolllist, edit=True, removeAll=True, append=self.settings_dictionnary[selection])
-
-
-
-	def add_content_in_textfield_function(self):
-		selection = mc.textScrollList(self.setting_syntax_list, query=True, si=True)[0]
-		mc.textField(self.setting_syntax_textfield, edit=True, text=selection)
-
-
-	def delete_settings_interface_item_function(self):
-		for key in self.settings:
-			#DELETE GRAPHIC INTERFACE
-			self.button_name = "%s_button"%key
-			
-			try:
-				mc.deleteUI(globals()[self.button_name], control=True)
-			except:
-				pass
-
-	
-	def create_settings_interface_item_function(self):
-		name_list = []
-		syntax_list = []
-		keyword_list = []
-		folder_list = []
-
-		print("\nUPDATE\n")
-
-		for key, value in self.settings.items():
-			print(key, value)
-			
-
-			name_list.append(key)
-			syntax_list.append(value[0])
-			keyword_list.append(value[1])
-
-			if value[2] == None:
-				folder_list.append("None")
-			else:
-				folder_list.append(value[2])
-
-		mc.textScrollList(self.setting_type_list, edit=True, removeAll=True, append=name_list)
-		mc.textScrollList(self.setting_syntax_list, edit=True, removeAll=True, append=syntax_list)
-		mc.textScrollList(self.setting_keyword_list, edit=True, removeAll=True, append=keyword_list)
-		mc.textScrollList(self.settings_folder_list, edit=True, removeAll=True, append=folder_list)
-		mc.textScrollList(self.type_list, edit=True, removeAll=True, append=name_list)
 
 	
 

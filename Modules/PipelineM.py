@@ -7,10 +7,12 @@ import sys
 import pickle
 import json 
 
+
 from datetime import datetime
 from functools import partial
 from zipfile import ZipFile, ZIP_DEFLATED
 from pathlib import Path
+
 
 
 
@@ -61,14 +63,15 @@ class PipelineApplication:
 				with open(os.path.join(self.project_path, "PipelineManagerData/PipelineSettings.dll"), "rb") as read_file:
 					self.settings = pickle.load(read_file)
 					self.settings_dictionnary = pickle.load(read_file)
+					self.additionnal_settings = pickle.load(read_file)
 				
 				print("Settings loaded successfully!")
 			
 			except:
-				self.settings, self.settings_dictionnary = self.create_pipeline_settings_function()
+				self.settings, self.settings_dictionnary, self.additionnal_settings = self.create_pipeline_settings_function()
 				print("Settings file created in your project!")
 				
-		return self.settings, self.settings_dictionnary
+		return self.settings, self.settings_dictionnary, self.additionnal_settings
 
 
 
@@ -164,7 +167,7 @@ class PipelineApplication:
 
 
 	def reload_settings_function(self):
-		self.settings, self.settings_dictionnary = self.load_settings_function()
+		self.settings, self.settings_dictionnary, self.additionnal_settings = self.load_settings_function()
 
 
 
@@ -192,7 +195,7 @@ class PipelineApplication:
 
 
 		mc.textScrollList(self.type_list, edit=True, removeAll=True, append=self.type_list_value)
-		mc.textScrollList(self.setting_type_list, edit=True, removeAll=True, append=setting_key_list)
+		mc.textScrollList(self.settings_type_list, edit=True, removeAll=True, append=setting_key_list)
 		mc.textScrollList(self.setting_syntax_list, edit=True, removeAll=True, append=setting_value_list)
 		mc.textScrollList(self.setting_keyword_list, edit=True, removeAll=True, append=setting_keyword_list)
 		mc.textScrollList(self.settings_folder_list, edit=True, removeAll=True, append=setting_default_folder_list)
@@ -222,6 +225,7 @@ class PipelineApplication:
 				with open(os.path.join(path, "PipelineManagerData/PipelineSettings.dll"), "wb") as save_file:
 					pickle.dump(self.settings, save_file)
 					pickle.dump(self.settings_dictionnary, save_file)
+					pickle.dump(self.additionnal_settings, save_file)
 			except AttributeError:
 			
 				self.create_pipeline_settings_function()
@@ -231,6 +235,7 @@ class PipelineApplication:
 
 
 	def create_pipeline_settings_function(self):
+		print("created")
 		basic_file_type_list = ["mod", "rig", "groom", "cloth", "lookdev", "layout", "camera", "anim", "render", "compositing"]
 
 		#TYPE OF DATA
@@ -243,15 +248,22 @@ class PipelineApplication:
 			"shots": ["layout", "camera", "anim", "render", "compositing"],
 		}
 		self.settings = {
-			"character":["[project]_[key]_[name]_[type]", "char", None, ["edit", "publish"], "maya"],
-			"prop":["[project]_[key]_[name]_[type]", "prop", None, ["edit", "publish"], "maya"],
-			"set":["[project]_[key]_[name]_[type]", "set", None, ["edit", "publish"], "maya"],
-			"fx":["[project]_[key]_[name]_[type]","fx", None, ["edit", "publish"], "maya"],
-			"shots":["[project]_[key]_[sqversion]_[shversion]", "shots", None, ["edit", "publish"], "maya"]
+			"character":["[project]_[key]_[name]_[type]", "char", None],
+			"prop":["[project]_[key]_[name]_[type]", "prop", None],
+			"set":["[project]_[key]_[name]_[type]", "set", None],
+			"fx":["[project]_[key]_[name]_[type]","fx", None],
+			"shots":["[project]_[key]_[sqversion]_[shversion]", "shots", None]
+		}
+		self.additionnal_settings = {
+			"3dSceneExtension":["ma","mb"],
+			"3dItemExtension":["obj", "fbx"],
+			"texturesExtension":["png", "tif","tiff","tex", "exr", "jpg"],
+			"mayaProjectName":"maya",
+			"editPublishFolder":["edit", "publish"]
 		}
 
 		self.save_settings_file()
-		return self.settings, self.settings_dictionnary
+		return self.settings, self.settings_dictionnary, self.additionnal_settings
 
 
 
@@ -365,6 +377,8 @@ class PipelineApplication:
 
 
 
+
+
 	def search_files_function(self, type_selection, kind_selection, name_selection):
 		"""
 		check the selection in all lists
@@ -372,6 +386,8 @@ class PipelineApplication:
 		"""
 		#do a recurcive selection
 		#go from the step_list to take files recurcively column after column
+
+
 		files_in_folder = []
 
 
@@ -380,9 +396,21 @@ class PipelineApplication:
 		self.name_list_value = []
 
 
-		folder_name = (mc.textField(self.project_label, query=True, text=True))
-		project_name = os.path.basename(os.path.normpath(folder_name))
+		#check content of the current checkbox
+		limit_search_checkbox = mc.checkBox(self.searchbar_checkbox, query=True, value=True)
 
+		
+		if limit_search_checkbox == True:
+			folder_name = (mc.textField(self.project_label, query=True, text=True))
+		else:
+			folder_name = (mc.workspace(query=True, active=True))
+			if (folder_name == None) or (folder_name == "None"):
+				mc.error("Impossible because you haven't set a project!")
+				return
+
+
+		
+		project_name = os.path.basename(os.path.normpath(mc.textField(self.project_label, query=True, text=True)))
 
 		for r, d, f in os.walk(folder_name):
 			if ("PipelineManagerData" in d)==True:
@@ -470,16 +498,10 @@ class PipelineApplication:
 								#it mean that no variable was use in the syntax field
 								if splited_syntax[i] != splited_file[i]:
 									error=True
-					if error==False:
-						"""
-						detect if a name is detected in the name selection
-						if one or several names are detected, check if the file name is contained in the list
+							
 
-							-> if yes -> add the file
-							-> if not -> don't
-							-> if there is no name detected in the selection add the file anyway
-						"""
-						
+					if error==False:
+					
 						if (name != None) and (name in self.name_list_value)==False:
 							self.name_list_value.append(name)
 
@@ -490,11 +512,7 @@ class PipelineApplication:
 						if name_selection == None:
 							if (file in self.result_list_value)==False:
 								self.result_list_value.append(file)
-						"""
-						if name != None:
-							self.name_list_value.append(name)
 						
-						self.result_list_value.append(file)"""
 
 
 		for i in range(0, len(self.result_list_value)):
@@ -505,12 +523,11 @@ class PipelineApplication:
 		if past_name_list != self.name_list_value:	
 			mc.textScrollList(self.name_list, edit=True, removeAll=True, append=self.name_list_value)
 
-								
 
 
-	def save_new_syntax_function(self, event):
+	def save_syntax_function(self, event):
 		#check selection of the textscrolllist
-		selection = mc.textScrollList(self.setting_syntax_list, query=True, sii=True)
+		selection = mc.textScrollList(self.settings_type_list, query=True, si=True)
 		new_content = mc.textField(self.setting_syntax_textfield, query=True, text=True)
 
 		if (self.letter_verification_function(new_content)==None) or (self.letter_verification_function(new_content)==False):
@@ -520,9 +537,15 @@ class PipelineApplication:
 			mc.error("You have at least one setting to change!")
 			return 
 		else:
+			selection = selection[0]
 			#get list of informations from settings dictionnary
 			keys = list(self.settings.keys())
 			values = list(self.settings.values())
+
+
+			self.settings[selection][0] = new_content
+
+			"""
 
 			for rank in selection:
 				for i in range(0, len(keys)):
@@ -533,13 +556,11 @@ class PipelineApplication:
 			for i in range(0, len(keys)):
 				self.settings[keys[i]] = values[i]
 
-			self.save_settings_file()
+			"""
 
-			new_values = []
-			for value in values:
-				new_values.append(value[0])
-			mc.textScrollList(self.setting_syntax_list, edit=True, removeAll=True, append=new_values)
+			self.save_settings_file()
 			self.deselect_all_lists()
+			mc.warning("Nomenclature saved successfully for [%s]" % selection)
 
 
 
@@ -555,13 +576,13 @@ class PipelineApplication:
 
 
 	def reset_default_syntax_function(self,event):
-		self.delete_settings_interface_item_function()
+		
 		self.default_settings = {
-			"character":["[project]_[key]_[name]_[type]", "char", None, ["edit", "publish"], "maya"],
-			"prop":["[project]_[key]_[name]_[type]", "prop", None, ["edit", "publish"], "maya"],
-			"set":["[project]_[key]_[name]_[type]", "set", None, ["edit", "publish"], "maya"],
-			"fx":["[project]_[key]_[name]_[type]","fx", None, ["edit", "publish"], "maya"],
-			"shots":["[project]_[key]_[sqversion]_[shversion]", "shots", None, ["edit", "publish"], "maya"]
+			"character":["[project]_[key]_[name]_[type]", "char", None],
+			"prop":["[project]_[key]_[name]_[type]", "prop", None],
+			"set":["[project]_[key]_[name]_[type]", "set", None,],
+			"fx":["[project]_[key]_[name]_[type]","fx", None,],
+			"shots":["[project]_[key]_[sqversion]_[shversion]", "shots", None,]
 		}
 		basic_file_type_list = ["mod", "rig", "groom", "cloth", "lookdev", "layout", "camera", "anim", "render", "compositing"]
 
@@ -575,32 +596,23 @@ class PipelineApplication:
 			"shots": ["layout", "camera", "anim", "render", "compositing"],
 		}
 
-		selection = mc.textScrollList(self.setting_syntax_list, query=True, sii=True)
-		if selection == None:
-			self.settings = self.default_settings
-			self.settings_dictionnary = self.default_settings_dictionnary
-			self.save_settings_file()
-		else:
-			for i in range(0, len(selection)):
-				selection[i] = int(selection[i]) - 1
-			old_values = list(self.default_settings.values())
-			keys = list(self.settings.keys())
+		self.default_additional_settings = {
+			"3dSceneExtension":["ma","mb"],
+			"3dItemExtension":["obj", "fbx"],
+			"texturesExtension":["png", "tif","tiff","tex", "exr", "jpg"],
+			"mayaProjectName":"maya",
+			"editPublishFolder":["edit", "publish"]
+		}
 
-			for rank in selection:
-				for i in range(0, len(keys)):
-					if int(rank) == i:
-						self.add_log_content_function("[%s] Setting has been reset"%keys[i])
-						self.settings[keys[i]] = old_values[i]
+		
+		
+		self.settings = self.default_settings
+		self.settings_dictionnary = self.default_settings_dictionnary
+		self.additionnal_settings = self.default_additional_settings
+		self.save_settings_file()
+		
 
-			self.save_settings_file()
-
-			values = list(self.settings.values())
-			keys = list(self.settings.keys())
-
-			for i in range(0, len(values)):
-				values[i] = values[i][0]
-
-		self.create_settings_interface_item_function()
+		
 
 
 
@@ -654,22 +666,25 @@ class PipelineApplication:
 
 	def delete_type_function(self, event):
 		#get the value in the type textscrolllist
-		type_list = mc.textScrollList(self.setting_type_list, query=True, si=True)
+		type_list = mc.textScrollList(self.settings_type_list, query=True, si=True)
 
 		if type_list == None:
 			mc.error("You have to select at least one type to delete!")
 			return
 
 		else:
-			self.delete_settings_interface_item_function()
+			
 			for item in type_list:
 				#delete the corresponding key in the dictionnary
 				self.settings.pop(item)
 				self.settings_dictionnary.pop(item)
 
-			self.refresh_export_type_list_function()			
-			self.create_settings_interface_item_function()
+		
+			
 			self.save_settings_file()
+			keys = list(self.settings.keys())
+			mc.textScrollList(self.settings_type_list, edit=True, removeAll=True, append=keys)
+			mc.textScrollList(self.settings_type_textscrolllist, edit=True, removeAll=True)
 
 
 	def save_project_name_function(self, event):
@@ -693,17 +708,21 @@ class PipelineApplication:
 		if there is no content in the syntax field put "" in the syntax
 		#so the program will detect that it's impossible to search for file
 		"""
-		setting_name_content = mc.textField(self.settings_create_type_textfield, query=True, text=True)
+		setting_name_content = mc.textField(self.setting_type_textfield, query=True, text=True)
 		setting_syntax_content = mc.textField(self.setting_syntax_textfield, query=True, text=True)
-		setting_keyword_content = mc.textField(self.settings_create_keyword_textfield, query=True, text=True)
+		setting_keyword_content = mc.textField(self.setting_keyword_textfield, query=True, text=True)
 
-		if (self.letter_verification_function(setting_name_content)==False) or (self.letter_verification_function(setting_name_content)==None) or (self.letter_verification_function(setting_keyword_content)==False) or (self.letter_verification_function(setting_keyword_content)==None):
-			mc.error("You have to define a name and a keyword to create a new type!")
+		print(setting_name_content)
+		if (self.letter_verification_function(setting_name_content)==False) or (self.letter_verification_function(setting_name_content)==None):
+			mc.error("You have to define a name!")
 			return
 
 		if (self.letter_verification_function(setting_syntax_content)==False) or (self.letter_verification_function(setting_syntax_content)==None):
-			mc.warning("No setting saved with the new type!")
-			setting_syntax_content = ""
+			mc.warning("No nomenclature saved with the new Kind!")
+			setting_syntax_content = "NoSyntaxDefined"
+		if (self.letter_verification_function(setting_keyword_content) == False) or (self.letter_verification_function(setting_keyword_content)==None):
+			mc.warning("No keyword saved with the new Kind!")
+			setting_keyword_content = "NoKeywordDefined"
 
 		if (setting_name_content in self.settings)==True:
 			mc.error("An existing type with the same name already exist!")
@@ -712,22 +731,24 @@ class PipelineApplication:
 			#delete all the buttons on the GUI
 			#self.delete_button_function()
 			#create the new key in the dictionnary
-			self.delete_settings_interface_item_function()
+			
 			self.settings[setting_name_content] = [setting_syntax_content, setting_keyword_content, None, [None, None], "maya"]
 			self.settings_dictionnary[setting_name_content] = self.file_type
 			self.save_settings_file()
-			self.refresh_export_type_list_function()
-			self.create_settings_interface_item_function()
+			keys = list(self.settings.keys())
+			mc.textScrollList(self.settings_type_list, edit=True, removeAll=True, append=keys)
+			mc.textScrollList(self.settings_type_textscrolllist, edit=True, removeAll=True)
+			
 
 		
 
 	def save_keyword_function(self, event):
 		try:
-			selection = mc.textScrollList(self.setting_keyword_list, query=True, sii=True)[0]
+			selection = mc.textScrollList(self.settings_type_list, query=True, sii=True)[0]
 		except TypeError:
-			mc.error("You have to select one keyword to change in the list!")
+			mc.error("You have to select one Kind to change in the list!")
 			return
-		content = mc.textField(self.settings_create_keyword_textfield, query=True, text=True)
+		content = mc.textField(self.setting_keyword_textfield, query=True, text=True)
 
 		#check if the content contain something
 		if (self.letter_verification_function(content)==False) or (self.letter_verification_function(content)==None):
@@ -741,7 +762,7 @@ class PipelineApplication:
 			mc.error("This keyword is already taken!")
 			return
 		else:
-			self.delete_settings_interface_item_function()
+			
 			#change the value in the dictionnary
 			keys = list(self.settings.keys())
 			values = list(self.settings.values())
@@ -752,17 +773,18 @@ class PipelineApplication:
 			#save the new dictionnary
 			self.save_settings_file()
 			self.refresh_export_type_list_function()
-			self.create_settings_interface_item_function()
+			mc.warning("Keyword saved successfully!")
+			
 
 
 
 
 	def create_file_kind_function(self, event):
-		type_selection = mc.textScrollList(self.setting_type_list, query=True, si=True)
+		type_selection = mc.textScrollList(self.settings_type_list, query=True, si=True)
 		if type_selection == None:
 			mc.error("You have to select at least one Type Name!")
 			return
-		new_kind_name = mc.textField(self.settings_type_textfield, query=True, text=True)
+		new_kind_name = mc.textField(self.create_file_kind_textfield, query=True, text=True)
 		if (self.letter_verification_function(new_kind_name)==False) or (self.letter_verification_function(new_kind_name)==None):
 			mc.error("You have to define a name for the new type!")
 			return
@@ -777,11 +799,14 @@ class PipelineApplication:
 			return
 
 	def delete_file_kind_function(self, event):
-		type_selection = mc.textScrollList(self.setting_type_list, query=True, si=True)
+		type_selection = mc.textScrollList(self.settings_type_list, query=True, si=True)
 		kind_selection = mc.textScrollList(self.settings_type_textscrolllist, query=True, si=True)
-		if len(type_selection)==None or len(kind_selection)==None:
+		try:
+			if len(type_selection)==None or len(kind_selection)==None:
+				mc.error("You have to select a Type Name and a type to delete!")
+				return
+		except:
 			mc.error("You have to select a Type Name and a type to delete!")
-			return
 		else:
 			settings_list = list(self.settings_dictionnary[type_selection[0]])
 			for item in kind_selection:
@@ -795,13 +820,13 @@ class PipelineApplication:
 
 	def rename_file_kind_function(self, event):
 		#take the content in textfield
-		textfield_content = mc.textField(self.settings_type_textfield, query=True, text=True)
+		textfield_content = mc.textField(self.create_file_kind_textfield, query=True, text=True)
 
 		if (self.letter_verification_function(textfield_content))==False or (self.letter_verification_function(textfield_content))==None:
 			mc.error("You have to define a new name!")
 			return
 		else:
-			type_selection = mc.textScrollList(self.setting_type_list, query=True, si=True)
+			type_selection = mc.textScrollList(self.settings_type_list, query=True, si=True)
 			kind_selection = mc.textScrollList(self.settings_type_textscrolllist, query=True, si=True)
 
 			if (type_selection==None) or (kind_selection==None):
@@ -1348,7 +1373,7 @@ class PipelineApplication:
 				return
 		else:
 			path = os.path.join(pipeline_path, "PipelineManagerData/ThumbnailsData/Thumbnail_%s.jpg"%current_filename)
-			mc.playblast(fr=current_frame, v=False, format="image", c="jpg", orn=False, wh=[700,400],cf=path)
+			mc.playblast(fr=current_frame, v=False, format="image", c="jpg", orn=False, wh=[300,300],cf=path)
 
 			mc.warning("Picture saved!\n%s"%path)
 			return
