@@ -7,7 +7,11 @@ import sys
 import pickle
 import json 
 
+<<<<<<< HEAD
 from tqdm import tqdm
+=======
+
+>>>>>>> origin/master
 from datetime import datetime
 from functools import partial
 from zipfile import ZipFile, ZIP_DEFLATED
@@ -1218,7 +1222,11 @@ class PipelineApplication:
 			final_extension_list = final_extension_list + self.additionnal_settings["texturesExtension"]
 
 
+<<<<<<< HEAD
 		
+=======
+		print(final_extension_list)
+>>>>>>> origin/master
 
 		if (self.letter_verification_function(searchbar_content)==False) or (self.letter_verification_function(searchbar_content)==None):
 			mc.error("Nothing to search!")
@@ -1237,6 +1245,7 @@ class PipelineApplication:
 				mc.error("Impossible to search!")
 				return
 
+<<<<<<< HEAD
 		
         
 
@@ -1258,23 +1267,39 @@ class PipelineApplication:
 			for file in f:
 				i+=1
 				print("[%s | %s]		checking - %s"%(i,total_files,file))
+=======
+		#list all the files in defined directory
+		file_list = []
+		for r,d,f in os.walk(starting_folder):
+			if ("PipelineManagerData" in d)==True:
+				d.remove("PipelineManagerData")
+			for file in f:
+>>>>>>> origin/master
 				valid=True
 
 				if len(final_extension_list) != 0:
 					if (os.path.splitext(file)[1] in final_extension_list) != True:
 						continue
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/master
 				for keyword in searchbar_content:
 					if (keyword in file) == False:
 						valid=False 
 
 				if valid == True:
 					file_list.append(file)
+<<<<<<< HEAD
 			
 		mc.progressWindow(endProgress=True)
                 
      	
         
+=======
+
+		print(file_list)
+>>>>>>> origin/master
 		mc.textScrollList(self.result_list, edit=True, removeAll=True, append=file_list)
 
 
