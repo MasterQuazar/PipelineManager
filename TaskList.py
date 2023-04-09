@@ -102,4 +102,6 @@ WORK IN PROGRESS :
 		- remove item
 		- delete archive
 		- rename archive
+	- load scripts in maya
 """
+		
