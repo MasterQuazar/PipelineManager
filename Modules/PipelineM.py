@@ -6,18 +6,22 @@ import ctypes
 import sys
 import pickle
 import json 
+import yaml
 
-<<<<<<< HEAD
 from tqdm import tqdm
-=======
-
->>>>>>> origin/master
 from datetime import datetime
 from functools import partial
 from zipfile import ZipFile, ZIP_DEFLATED
 from pathlib import Path
 
-
+"""
+	[Origin]
+	[key]
+	[name]
+	[mayaProjectName]
+	[type]
+	[editPublishFolder]
+"""
 
 
 """
@@ -57,19 +61,24 @@ class PipelineApplication:
 	def load_settings_function(self):
 		if (self.project_path == None) or (self.project_path == "None"):
 			mc.warning("Impossible to load settings!")
-			return
+			return None, None, None
 		else:
 			
 			if type(self.project_path)==list:
 				self.project_path = self.project_path[0]
-			try:
+			
+		
+		
+		
+			try:	
+				with open(os.path.join(self.project_path, "PipelineManagerData/PipelineSettings.yaml"), "r") as read_file:
+					load_data = yaml.load(read_file,Loader=yaml.Loader)
 				
-				with open(os.path.join(self.project_path, "PipelineManagerData/PipelineSettings.dll"), "rb") as read_file:
-					self.settings = pickle.load(read_file)
-					self.settings_dictionnary = pickle.load(read_file)
-					self.additionnal_settings = pickle.load(read_file)
+				self.settings = load_data["dict1"]
+				self.settings_dictionnary = load_data["dict2"]
+				self.additionnal_settings = load_data["dict3"]
+
 				
-				print(self.additionnal_settings)
 				print("Settings loaded successfully!")
 			
 			except:
@@ -79,32 +88,6 @@ class PipelineApplication:
 		return self.settings, self.settings_dictionnary, self.additionnal_settings
 
 
-
-	def define_default_folder_function(self):
-		#define folder
-		key_list = list(self.settings.keys())
-		selected_key = key_list[int(mc.textScrollList(self.settings_folder_list, query=True, sii=True)[0])-1]
-		
-
-		folder = mc.fileDialog2(fm=3)[0]
-		if folder == None:
-			folder = "None"
-		list_content = self.settings[selected_key]
-		list_content[2] = folder
-
-		self.settings[selected_key] = list_content
-
-		folder_list = []
-
-		for key, value in self.settings.items():
-			if value[2] == None:
-				folder_list.append("None")
-			else:
-				folder_list.append(value[2])
-
-		mc.textScrollList(self.settings_folder_list, edit=True, removeAll=True, append=folder_list)
-		#save the new settings folder
-		self.save_settings_file()
 
 
 
@@ -200,13 +183,12 @@ class PipelineApplication:
 
 
 		mc.textScrollList(self.type_list, edit=True, removeAll=True, append=self.type_list_value)
-		mc.textScrollList(self.settings_type_list, edit=True, removeAll=True, append=setting_key_list)
-		mc.textScrollList(self.setting_syntax_list, edit=True, removeAll=True, append=setting_value_list)
-		mc.textScrollList(self.setting_keyword_list, edit=True, removeAll=True, append=setting_keyword_list)
-		mc.textScrollList(self.settings_folder_list, edit=True, removeAll=True, append=setting_default_folder_list)
+		#mc.textScrollList(self.settings_type_list, edit=True, removeAll=True, append=setting_key_list)
+		#mc.textScrollList(self.setting_syntax_list, edit=True, removeAll=True, append=setting_value_list)
+		#mc.textScrollList(self.setting_keyword_list, edit=True, removeAll=True, append=setting_keyword_list)
+		#mc.textScrollList(self.settings_folder_list, edit=True, removeAll=True, append=setting_default_folder_list)
 
 		
-
 
 
 
@@ -230,12 +212,16 @@ class PipelineApplication:
 				os.mkdir(os.path.join(path, "PipelineManagerData"))
 			
 			try:
-				with open(os.path.join(path, "PipelineManagerData/PipelineSettings.dll"), "wb") as save_file:
-					pickle.dump(self.settings, save_file)
-					pickle.dump(self.settings_dictionnary, save_file)
-					pickle.dump(self.additionnal_settings, save_file)
+				print("SAVING!")
+				saving_dictionnary = {
+					"dict1":self.settings,
+					"dict2":self.settings_dictionnary,
+					"dict3":self.additionnal_settings,
+				}
+				with open(os.path.join(path, "PipelineManagerData/PipelineSettings.yaml"), "w") as save_file:
+					yaml.dump(saving_dictionnary, save_file, indent=4)
 			except AttributeError:
-			
+				print("Impossible to save!")
 				self.create_pipeline_settings_function()
 			self.add_log_content_function("Settings file saved successfully")
 
@@ -243,7 +229,7 @@ class PipelineApplication:
 
 
 	def create_pipeline_settings_function(self):
-		print("created")
+		print("Settings file created!")
 		basic_file_type_list = ["mod", "rig", "groom", "cloth", "lookdev", "layout", "camera", "anim", "render", "compositing"]
 
 		#TYPE OF DATA
@@ -263,7 +249,7 @@ class PipelineApplication:
 			"shots":["[project]_[key]_[sqversion]_[shversion]", "shots", None]
 		}
 		self.additionnal_settings = {
-			"checkboxValues":[False, True, False, False],
+			"checkboxValues":[False, True, False, False, False],
 			"3dSceneExtension":[".ma",".mb"],
 			"3dItemExtension":[".obj", ".fbx"],
 			"texturesExtension":[".png", ".tif",".tiff",".tex", ".exr", ".jpg"],
@@ -343,45 +329,9 @@ class PipelineApplication:
 				mc.textScrollList(self.kind_list, edit=True, removeAll=True, append=self.new_type_list)
 
 
-		#add content to next list
-		"""
-		if step_selection != None:
-			past_step_list = self.new_step_list
-			self.new_step_list = []
-
-			for element in step_selection:
-				for key, value in self.settings_dictionnary.items():
-					if element == key:
-						
-						for value_key, value_value in value.items():
-							if (value_key in self.new_step_list)==False:
-								self.new_step_list.append(value_key)
-
-			if (past_step_list != self.new_step_list):
-				mc.textScrollList(self.type_list, edit=True, removeAll=True, append=self.new_step_list)
-				mc.textScrollList(self.kind_list, edit=True, removeAll=True)"""
-
-
-		"""
-		if type_selection != None:
-			past_type_list = self.new_type_list
-			self.new_type_list = []
-
-			for element in type_selection:
-				for key, value in self.settings_dictionnary.items():
-					#create categorie list	
-					for value_key, value_value in value.items():
-						if value_key == element:
-							if type(value_value) != list:
-								value_value = [value_value]
-							for item in value_value:
-								if (item in self.new_type_list)==False:
-									self.new_type_list.append(item)"""
-
-
 			
-
-		self.search_files_function(type_selection, kind_selection, name_selection)
+		if (type_selection != None) or (kind_selection != None) or (name_selection != None):
+			self.search_files_function(type_selection, kind_selection, name_selection)
 
 
 
@@ -389,38 +339,254 @@ class PipelineApplication:
 
 
 	def search_files_function(self, type_selection, kind_selection, name_selection):
-		"""
-		check the selection in all lists
-		check the content
-		"""
-		#do a recurcive selection
-		#go from the step_list to take files recurcively column after column
+		#get the content of all checkbox
+		#to define the searching field
+		project_limit = mc.checkBox(self.searchbar_checkbox, query=True, value=True)
+		scenes_limit = mc.checkBox(self.scenes_checkbox, query=True, value=True)
+		items_limit = mc.checkBox(self.items_checkbox, query=True, value=True)
+		textures_limit = mc.checkBox(self.textures_checkbox, query=True, value=True)
+		default_folder = mc.checkBox(self.folder_checkbox, query=True, value=True)
 
-
-		files_in_folder = []
-
-
-		past_name_list = self.name_list_value
-		self.result_list_value = []
-		self.name_list_value = []
-
-
-		#check content of the current checkbox
-		limit_search_checkbox = mc.checkBox(self.searchbar_checkbox, query=True, value=True)
-
-		
-		if limit_search_checkbox == True:
-			folder_name = (mc.textField(self.project_label, query=True, text=True))
-		else:
-			folder_name = (mc.workspace(query=True, active=True))
-			if (folder_name == None) or (folder_name == "None"):
-				mc.error("Impossible because you haven't set a project!")
-				return
-
-
-		
 		project_name = os.path.basename(os.path.normpath(mc.textField(self.project_label, query=True, text=True)))
 
+		starting_folder = []
+
+		#define the starting folder of the research
+		if type_selection != None:
+			if default_folder == True:
+				#search for the default folder name
+				for t in type_selection:
+					for key, value in self.settings.items():
+						if key == t:
+							starting_folder.append(t)
+				if len(starting_folder)==0:
+					mc.warning("No default folder defined!")
+				else:
+					mc.warning(starting_folder)
+				'''
+				for key, value in self.settings.items():
+					if key == type_selection[0]:
+						if value[2] != None:
+							starting_folder = value[2]
+				if starting_folder == None:
+					mc.warning("No default folder for that type!")
+				'''
+
+		if project_limit == True:
+			if mc.workspace(query=True, active=True) != None:
+				starting_folder = [mc.workspace(query=True, active=True)]
+			else:
+				starting_folder = None
+				mc.warning("No project defined!")
+
+
+		if len(starting_folder) == 0:
+			mc.warning("Pipeline folder set as starting folder!")
+			starting_folder = [mc.textField(self.project_label, query=True, text=True)]
+
+		
+		for item in starting_folder:
+			if os.path.isdir(item) == False:
+				mc.error("Impossible to launch searching beacuse of the starting folder not existing!\n[%s]"%item)
+				return
+	
+
+	
+		#define the extension list according to checkbox
+		extension_list = []
+		if mc.checkBox(self.scenes_checkbox, query=True, value=True)== True:
+			extension_list += self.additionnal_settings["3dSceneExtension"]
+		if mc.checkBox(self.textures_checkbox, query=True, value=True)==True:
+			extension_list += self.additionnal_settings["texturesExtension"]
+		if mc.checkBox(self.items_checkbox, query=True, value=True)==True:
+			extension_list += self.additionnal_settings["3dItemExtension"]
+		#define the number of files from the starting folder
+		total_files = 0
+		for folder in starting_folder:
+			total_files += int(sum([len(files) for root, dirs, files in os.walk(folder)]))
+		i = 0
+
+
+
+		#self.progress_bar = mc.progressWindow(title="Processing...", progress=0, status="Starting",min=0, max=total_files)
+		#print(starting_folder)
+		print("Searching...")
+
+
+
+
+		
+		final_file_list = []
+		final_name_list = []
+
+		
+		
+		
+		for folder in starting_folder:
+			print("searching in [%s]"%folder)
+			p = 0 
+			total_files = int(sum([len(files) for root, dirs, files in os.walk(folder)]))
+			self.progress_bar = mc.progressWindow(title="Processing...", progress=0, status="Starting", min=0, max=total_files)
+			for r, d, f in os.walk(folder):
+				
+
+				if ("PipelineManagerData" in d)==True:
+					d.remove("PipelineManagerData")
+
+				for file in f:
+					p+=1
+					print("[%s | %s]		checking - %s"%(p, total_files, file))
+					mc.progressWindow(edit=True, progress=p, status="Processing...")
+					#get files information
+					file_path = os.path.dirname(file)
+					file_name = os.path.splitext(os.path.basename(file))[0]
+					file_extension = os.path.splitext(file)[1]
+					#check if extension of the file is in the list
+					if (len(extension_list)!= 0) and (file_extension in extension_list)==False:
+						continue
+					
+					#split de filename to check the len of the syntax
+					#get the syntax and the keyword of the current type
+					for t in type_selection:
+						error=False
+						syntax = self.settings[t][0]
+						keyword = self.settings[t][1]
+
+						splited_filename = file_name.split("_")
+						splited_syntax = syntax.split("_")
+
+						
+
+						if len(splited_filename) != len(splited_syntax):
+							error=True
+							continue
+
+						#DISPLAY ONLY FILES WITH THE RIGHT SIZE
+						#print("\nNEW FILE - %s"%file)
+						#print("[key]" in splited_syntax)
+
+
+
+
+
+						if "[type]" in splited_syntax:
+							type_index = splited_syntax.index("[type]")
+							"""
+							if no type is selected then 
+							skip the type error
+							"""
+							if kind_selection == None:
+								pass
+							#print(splited_filename[type_index], splited_filename[type_index] in kind_selection, kind_selection)
+							elif (splited_filename[type_index] in kind_selection)==False:
+								error=True 
+								print("ERROR type %s" % file)
+								continue
+
+
+						if "[key]" in splited_syntax:
+							key_index = splited_syntax.index("[key]")
+
+							#print(splited_filename[key_index], keyword)
+							if splited_filename[key_index] != keyword:
+								print("ERROR key %s" % file)
+								error=True 
+								#print("keyword error")
+								continue
+							else:
+								print(file)
+
+
+						#check the whole syntax of the file
+						if "[project]" in splited_syntax:
+							project_index = splited_syntax.index("[project]")
+							#print(splited_filename[keyword_index], project_name)
+							if splited_filename[project_index] != project_name:
+								print("ERROR project %s" % file)
+								error=True 
+								continue
+
+						if "[version]" in splited_syntax:	
+							version_index = splited_syntax.index("[version]")
+
+							if (splited_filename[version_index]) != "publish":
+								if (len(splited_filename[version_index].split("v")) == 2):
+									if (splited_filename[version_index].split("v")[0] != "") or (splited_filename[version_index].split("v")[1].isdigit()==False):
+										print("ERROR version %s" % file)
+										error=True
+	
+										continue
+								else:
+
+									error=True
+									continue
+
+						if "[sqversion]" in splited_syntax:
+							version_index = splited_syntax.index(["sqversion"])
+							if (len(splited_filename[version_index].split("sq"))==2):
+								if (splited_filename[version_index].split("sq")[0] != "") or (splited_filename[version_index].split("sq")[1].isdigit()==False):
+									error=True 
+
+									continue
+						if "[shversion]" in splited_syntax:
+							version_index = splited_syntax.index(["shversion"])
+							if (len(splited_filename[version_index].split("sh"))==2):
+								if (splited_filename[version_index].split("sh")[0] != "") or (splited_filename[version_index].split("sh")[1].isdigit()==False):
+									error=True 
+
+									continue
+						#check that the file is contained in name list selection
+						if (name_selection != None):
+							#check the name keyword in the syntax
+							if ( "[name]" in splited_syntax ) == False:
+								print("ERROR name %s" % file)
+								error=True
+								continue
+							else:
+								
+								
+								if (splited_filename[splited_syntax.index("[name]")] in name_selection) == False:
+									print("ERROR name %s" % file)
+									error=True 
+									continue
+
+								
+
+
+						if ("[name]" in splited_syntax) and (error == False):
+							name = splited_filename[splited_syntax.index("[name]")]
+							if (name in final_name_list)==False:
+								final_name_list.append(name)
+
+
+						if ("[artist]" in splited_syntax):
+							artist_name = splited_filename[splited_syntax.index("[artist]")]
+							print(artist_name)
+						
+
+
+					
+
+
+					if error == False:
+						#print("FILE CHECKED - %s" % file)
+						final_file_list.append(file)
+
+		print("\nSEARCHING DONE!!!\n")
+		mc.progressWindow(endProgress=True)
+
+		
+		mc.textScrollList(self.result_list, edit=True,removeAll=True, append=final_file_list)
+		mc.textScrollList(self.name_list, edit=True, removeAll=True, append=final_name_list)
+		
+				
+
+
+
+
+
+		#create the starting folder
+		"""
 		for r, d, f in os.walk(folder_name):
 			if ("PipelineManagerData" in d)==True:
 				d.remove("PipelineManagerData")
@@ -428,35 +594,9 @@ class PipelineApplication:
 			for file in f:
 				files_in_folder.append(os.path.join(r, file))
 		
-		
+		 	
 		#splited_file = os.path.splitext(os.path.basename(file))[0].split("_")
-		
-		
-
-		if type_selection != None:
-			for ts in type_selection:
-				for file in files_in_folder:
-					error=False
-					name = None
-					#get the setting and the syntax linked to it
-					syntax = self.settings[ts][0]
-					keyword = self.settings[ts][1]
-
-					#check the syntax for each files
-					#CHECK FIRST THE TYPE OF THE FILE (INCLUDING THE OVERHALL SYNTAX!!!")
-					splited_syntax = syntax.split("_")
-					splited_file = os.path.splitext(os.path.basename(file))[0].split("_")
-
-
-					if self.letter_verification_function(syntax) == False:
-						mc.warning("Impossible to search for files because no syntax to search!")
-						error = True
-
-
-
-					elif len(splited_syntax) != len(splited_file):
-						error = True
-
+	
 
 					else:
 						for i in range(0, len(splited_syntax)):
@@ -507,30 +647,9 @@ class PipelineApplication:
 								#it mean that no variable was use in the syntax field
 								if splited_syntax[i] != splited_file[i]:
 									error=True
+		"""
 							
 
-					if error==False:
-					
-						if (name != None) and (name in self.name_list_value)==False:
-							self.name_list_value.append(name)
-
-
-						if name_selection != None:
-							if (name != None) and (name in name_selection)==True:
-								self.result_list_value.append(file)
-						if name_selection == None:
-							if (file in self.result_list_value)==False:
-								self.result_list_value.append(file)
-						
-
-
-		for i in range(0, len(self.result_list_value)):
-			self.result_list_value[i] = (os.path.basename(self.result_list_value[i]))
-
-		mc.textScrollList(self.result_list, edit=True, removeAll=True, append=self.result_list_value)
-		
-		if past_name_list != self.name_list_value:	
-			mc.textScrollList(self.name_list, edit=True, removeAll=True, append=self.name_list_value)
 
 
 
@@ -620,6 +739,36 @@ class PipelineApplication:
 		self.settings_dictionnary = self.default_settings_dictionnary
 		self.additionnal_settings = self.default_additional_settings
 		self.save_settings_file()
+
+
+
+
+	def define_default_folder_function(self, event):
+		#get pipeline folder
+		project_name = mc.textField(self.project_label, query=True, text=True)
+		#get selection in textscrolllist
+		selection = mc.textScrollList(self.settings_type_list, query=True, si=True)
+		if (selection == None):
+			mc.error("You have to select a type to define a new default folder!")
+			return
+		else:
+			#open a file dialogue interface
+			if os.path.isdir(project_name)==False:
+				new_default_folder = mc.fileDialog2(ds=1, fm=3)
+			else:
+				new_default_folder = mc.fileDialog2(ds=1, fm=3, dir=project_name)
+
+			if new_default_folder == None:
+				mc.warning("No default folder saved!")
+				return
+			else:
+				for key, value in self.settings.items():
+					if key == selection[0]:
+						value[2] = new_default_folder[0]
+						self.settings[key] = value
+						self.save_settings_file()
+
+						mc.button(self.setting_default_folder_button, edit=True, label=new_default_folder[0])
 		
 
 		
@@ -873,6 +1022,14 @@ class PipelineApplication:
 						final_syntax.append(os.path.basename(os.path.normpath(mc.workspace(query=True, active=True))))
 					if element == "[key]":
 						final_syntax.append(content[1])
+					if element == "[artist]":
+						#get the content of artist textfield
+						artist_name = mc.textField(self.export_artist_name_textfield, query=True, text=True)
+						if (self.letter_verification_function(artist_name)) != True:
+							mc.error("You have to enter a valid artist name!")
+							return
+						else:
+							final_syntax.append(artist_name)
 					if element == "[name]":
 						name = mc.textField(self.export_edit_name_textfield, query=True, text=True)
 						if (self.letter_verification_function(name)==False) or (self.letter_verification_function(name)==None):
@@ -1222,11 +1379,7 @@ class PipelineApplication:
 			final_extension_list = final_extension_list + self.additionnal_settings["texturesExtension"]
 
 
-<<<<<<< HEAD
 		
-=======
-		print(final_extension_list)
->>>>>>> origin/master
 
 		if (self.letter_verification_function(searchbar_content)==False) or (self.letter_verification_function(searchbar_content)==None):
 			mc.error("Nothing to search!")
@@ -1245,7 +1398,6 @@ class PipelineApplication:
 				mc.error("Impossible to search!")
 				return
 
-<<<<<<< HEAD
 		
         
 
@@ -1267,39 +1419,23 @@ class PipelineApplication:
 			for file in f:
 				i+=1
 				print("[%s | %s]		checking - %s"%(i,total_files,file))
-=======
-		#list all the files in defined directory
-		file_list = []
-		for r,d,f in os.walk(starting_folder):
-			if ("PipelineManagerData" in d)==True:
-				d.remove("PipelineManagerData")
-			for file in f:
->>>>>>> origin/master
 				valid=True
 
 				if len(final_extension_list) != 0:
 					if (os.path.splitext(file)[1] in final_extension_list) != True:
 						continue
-<<<<<<< HEAD
 
-=======
->>>>>>> origin/master
 				for keyword in searchbar_content:
 					if (keyword in file) == False:
 						valid=False 
 
 				if valid == True:
 					file_list.append(file)
-<<<<<<< HEAD
 			
 		mc.progressWindow(endProgress=True)
                 
      	
         
-=======
-
-		print(file_list)
->>>>>>> origin/master
 		mc.textScrollList(self.result_list, edit=True, removeAll=True, append=file_list)
 
 
@@ -1331,8 +1467,7 @@ class PipelineApplication:
 		pipeline_path = mc.textField(self.project_label, query=True, text=True)
 		pipeline_name = os.path.basename(pipeline_path)
 		#get project keyword
-		for key, value in self.settings.items():
-			project_name = value[4]
+		project_name = self.additionnal_settings["mayaProjectName"]
 		for r, d, f in os.walk(pipeline_path):
 			for file in f:
 				if os.path.basename(file) == selection:
@@ -1452,6 +1587,7 @@ class PipelineApplication:
 
 
 	def search_for_thumbnail_function(self):
+		self.search_for_note_function()
 		#get the name of the selected item
 		selection = os.path.splitext(mc.textScrollList(self.result_list, query=True, si=True)[0])[0]
 		#get the name of the current project
@@ -1487,13 +1623,14 @@ class PipelineApplication:
 		scenes = mc.checkBox(self.scenes_checkbox, query=True, value=True)
 		items = mc.checkBox(self.items_checkbox, query=True, value=True)
 		textures = mc.checkBox(self.textures_checkbox, query=True, value=True)
+		folder = mc.checkBox(self.folder_checkbox, query=True, value=True)
 
 		#get each extension list
 		scenes_extension_list = mc.textField(self.assets_scene_extension_textfield, query=True, text=True).split(";")
 		items_extension_list = mc.textField(self.assets_items_extension_textfield, query=True, text=True).split(";")
 		textures_extension_list = mc.textField(self.assets_textures_extension_textfield, query=True, text=True).split(";")
 
-		self.additionnal_settings["checkboxValues"] = [searchbar_limit, scenes, items, textures]
+		self.additionnal_settings["checkboxValues"] = [searchbar_limit, scenes, items, textures, folder]
 		self.additionnal_settings["3dSceneExtension"] = scenes_extension_list
 		self.additionnal_settings["3dItemExtension"] = items_extension_list
 		self.additionnal_settings["texturesExtension"] = textures_extension_list
@@ -1513,9 +1650,557 @@ class PipelineApplication:
 
 
 
+		
+	def define_export_nomenclature_function(self, status):
+		type_selection = mc.textScrollList(self.export_type_textscrolllist, query=True, si=True)
+		kind_selection = mc.textScrollList(self.export_kind_textscrolllist, query=True, si=True)
 
+		if type_selection == None:
+			mc.error("You have to select a type!")
+			return
+		nomenclature = self.settings[type_selection[0]]
+		if ("[type]" in nomenclature) and (kind_selection == None):
+			mc.error("You have also to select a kind!")
+			return
+		else:
+			#get the nomenclature of the current type
+			nomenclature = self.settings[type_selection[0]][0]
+			keyword = self.settings[type_selection[0]][1]
+			defaultfolder = self.settings[type_selection[0]][2]
 
+			splited_nomenclature = nomenclature.split("_")
+			splited_filename = os.path.splitext(os.path.basename(mc.file(query=True, sn=True)))[0].split("_")
 					
+			print(splited_nomenclature)
+			print(splited_filename)
+
+			final_filename = []
+
+			for i in range(0, len(splited_nomenclature)):
+				#print(splited_nomenclature[i])
+				if splited_nomenclature[i] == "[key]":
+					#print("nique tes grands morts maya!")
+					#print(type_selection[0])
+					final_filename.append(keyword)
+					#final_filename.append(type_selection[0])
+
+				if splited_nomenclature[i] == "[artist]":
+					artist_name = mc.textField(self.export_artist_name_textfield, query=True, text=True)
+					if self.letter_verification_function(artist_name) != True:
+						mc.error("Impossible to get the artist name!")
+						return
+					else:
+						final_filename.append(artist_name)
+
+				if splited_nomenclature[i] == "[name]":
+					if mc.checkBox(self.export_edit_name_checkbox, query=True, value=True)==True:
+						#go through the actual filename and try to get the keyword to get the nomenclature
+						#print(list(self.settings.keys()))
+						actual_keyword = None
+						actual_name = None
+
+						if len(splited_filename)==0:
+							mc.error("Impossible to get the name in the current filename!")
+							return
+						for word in splited_filename:
+							for setting_name, setting_content in self.settings.items():
+								if word == setting_content[1]:
+									actual_keyword = setting_content[1]
+									if ("[name]" in setting_content[0].split("_")) == False:
+										mc.error("Impossible to get the name from the actual filename!")
+										return
+									else:
+										actual_name = splited_filename[setting_content[0].split("_").index("[name]")]
+						if( actual_keyword == None) or (actual_name == None):
+							mc.error("Impossible to get the actual name of the file!")
+							return
+						else:
+							print(actual_name)
+							final_filename.append(actual_name)
+					else:
+						#try to get the content of the textfield
+						content = mc.textField(self.export_edit_name_textfield, query=True, text=True)
+						if (self.letter_verification_function(content)==True):
+							print(content)
+							final_filename.append(content)
+						else:
+							mc.error("Impossible to get the name in textfield!")
+							return
+
+				if splited_nomenclature[i] == "[version]":
+					#if mc.checkBox(self.export_edit_version_checkbox, query=True, value=True) == False:
+						#try to get the version in textfield
+					content = mc.intField(self.export_edit_version_intfield, query=True, value=True)
+					if len(list(str(content))) == 1:
+						content = "v00%s"%content 
+					else:
+						content = "v0%s"%content 
+
+					final_filename.append(content)
+
+				if splited_nomenclature[i] == "[sqversion]":
+					content = str(mc.intField(self.export_edit_sequence_intfield, query=True, value=True))
+					if len(list(str(content)))==1:
+						content == "sq00%s"%content 
+					else:
+						content == "sq0%s"%content 
+					final_filename.append(content)
+
+				if splited_nomenclature[i] == "[shversion]":
+					content = str(mc.intField(self.export_edit_shot_intfield, query=True, value=True))
+					if len(list(str(content)))==1:
+						content == "sh00%s"%content 
+					else:
+						content == "sh0%s"%content 
+					final_filename.append(content)
+
+				if splited_nomenclature[i] == "[project]":
+					if self.project_path == None:
+						mc.error("Impossible to get project name because project isn't defined!")
+						return
+					else:
+						final_filename.append(os.path.basename(self.project_path))
+
+				if splited_nomenclature[i] == "[type]":
+					final_filename.append(kind_selection[0])
+			
+			print(final_filename)
+			return "_".join(final_filename)+".ma"
+
+
+
+
+
+	def define_export_path_function(self, filename, statut):
+		"""
+		--> export in current folder
+		--> export in same folder
+		--> default folder assist
+			DEFINE PATH FROM VARIABLES
+		"""
+
+		"""
+		list of variables for path
+		"""
+		type_selection = mc.textScrollList(self.export_type_textscrolllist, query=True, si=True)
+		kind_selection = mc.textScrollList(self.export_kind_textscrolllist, query=True, si=True)
+		splited_filename = os.path.splitext(os.path.basename(mc.file(query=True, sn=True)))[0].split("_")
+
+		if type_selection == None:
+			mc.error("You have to select a type!")
+			return
+
+		nomenclature = self.settings[type_selection[0]]
+		if (("[type]") in nomenclature) and (kind_selection == None):
+			mc.error("You have to select a kind for that nomenclature!")
+			return
+
+		if mc.checkBox(self.export_current_folder_checkbox, query=True, value=True)==True:
+			#get the path of the current file
+			path = os.path.dirname(mc.file(query=True, sn=True))
+			if (self.letter_verification_function(path)==True) and (path != None):
+				return path
+			else:
+				mc.error("Impossible to get current filepath!")
+				return
+		if mc.checkBox(self.export_custom_folder_checkbox, query=True, value=True)==True:
+			folder = mc.fileDialog2(fm=3)
+			if folder == None:
+				mc.error("You have to define one folder!")
+				return
+			else:
+				return folder
+				#folder = mc.workspace(query=True, active=True)
+		if mc.checkBox(self.export_assist_folder_checkbox, query=True, value=True)==True:
+			final_filepath = []
+			#check the value of the default folder
+			default_folder_path = self.settings[type_selection[0]][2]
+			if default_folder_path == None:
+				mc.error("Impossible to detect a default folder in settings!")
+				return
+			splited_default_folder = default_folder_path.split("/")
+
+			for i in range(0, len(splited_default_folder)):
+				#KEYWORD CONDITIONS
+
+
+				if (splited_default_folder[i][0] == "[") and (splited_default_folder[i][-1] == "]"):
+					if splited_default_folder[i] == "[Origin]":
+						final_filepath.append(self.project_path)
+
+
+
+					if splited_default_folder[i] =="[key]":
+						final_filepath.append(type_selection[0])
+
+					if splited_default_folder[i] == "[name]":
+						if mc.checkBox(self.export_edit_name_checkbox, query=True, value=True)==True:
+							#go through the actual filename and try to get the keyword to get the nomenclature
+							#print(list(self.settings.keys()))
+							actual_keyword = None
+							actual_name = None
+							for word in splited_filename:
+								for setting_name, setting_content in self.settings.items():
+									if word == setting_content[1]:
+										actual_keyword = setting_content[1]
+										if ("[name]" in setting_content[0].split("_")) == False:
+											mc.error("Impossible to get the name from the actual filename!")
+											return
+										else:
+											actual_name = splited_filename[setting_content[0].split("_").index("[name]")]
+							if( actual_keyword == None) or (actual_name == None):
+								mc.error("Impossible to get the actual name of the file!")
+								return
+							else:
+								final_filepath.append(actual_name)
+						else:
+							#try to get the content of the textfield
+							content = mc.textField(self.export_edit_name_textfield, query=True, text=True)
+							if (self.letter_verification_function(content)==True):
+								final_filepath.append(content)
+							else:
+								mc.error("Impossible to get the name in textfield!")
+								return
+
+
+					if splited_default_folder[i] == "[mayaProjectName]":
+						final_filepath.append(self.additionnal_settings["mayaProjectName"])
+					
+
+					if splited_default_folder[i] == "[type]":
+						final_filepath.append(kind_selection[0])
+
+
+					if splited_default_folder[i] == "[editPublishFolder]":
+						if statut=="publish":
+							final_filepath.append(self.additionnal_settings["editPublishFolder"][1])
+						else:
+							final_filepath.append(self.additionnal_settings["editPublishFolder"][0])
+
+
+					if splited_default_folder[i] == "[sqversion]":
+						sequence = str(mc.intField(self.export_edit_sequence_intfield, query=True, value=True))
+						if len(list(sequence)) == 1:
+							sequence = "sq00%s"%sequence 
+						else:
+							sequence = "sq0%s"%sequence 
+						final_filepath.append(sequence)
+					if splited_default_folder[i] == "[shversion]":
+						sequence = str(mc.intField(self.export_edit_shot_intfield, query=True, value=True))
+						if len(list(sequence)) == 1:
+							sequence = "sh00%s"%sequence 
+						else:
+							sequence = "sh0%s"%sequence 
+						final_filepath.append(sequence)
+
+						
+				
+
+				#PROPER VALUES
+				else:
+					final_filepath.append(splited_default_folder[i])
+
+			return "/".join(final_filepath)
+		
+
+
+				
+
+
+
+	def export_edit_function(self, event):
+		filename = self.define_export_nomenclature_function("edit")
+		filepath = self.define_export_path_function(filename, "edit")
+		final_path = os.path.join(filepath, filename)
+		print("Returned filename : [%s]"%filename)
+		print("Returned filepath : [%s]"%filepath)
+		
+		#save the current scene with current filename
+		
+		try:
+			mc.file(save=True, type="mayaAscii")
+		except:
+			mc.warning("Impossible to save the current file before creating edit!")
+		
+
+		
+		#save the new scene with the new name
+		#try to create all folder and save the file
+		
+		try:
+			os.makedirs(filepath, exist_ok=True)
+			mc.file(rename=final_path)
+			mc.file(save=True, type="mayaAscii")
+
+			mc.warning("File saved successfully!")
+			print(final_path)
+			return
+		except:
+			mc.error("Impossible to save the file!")
+			return
+		
+
+	def create_path_function(self, event):
+		os.makedirs(path, exist_ok=True)
+
+	def export_publish_function(self, event):
+		#go through the current filename and try to find keyword to then define version position
+		splited_filename = os.path.basename(os.path.splitext(mc.file(query=True, sn=True))[0]).split("_")
+		
+		for i in range(0, len(splited_filename)):
+			for key, value in self.settings.items():
+				if value[1] == splited_filename[i]:
+					splited_nomenclature = value[0].split("_")
+
+					if "[version]" in splited_nomenclature:
+						index = splited_nomenclature.index("[version]")
+						splited_filename[index] = self.additionnal_settings["editPublishFolder"][1]
+					elif "[name]" in splited_nomenclature:
+						index = splited_nomenclature.index("[name]")
+						splited_filename[index] = splited_filename[index]+"Publish"
+					else:
+						mc.error("Impossible to create the publish keyword in the nomenclature!")
+						return
+
+		filename = "_".join(splited_filename) + ".ma"
+		filepath = self.define_export_path_function(filename, "publish")
+		final_path = os.path.join(filepath, filename)
+		print("Returned filename : [%s]"%filename)
+		print("Returned filepath : [%s]"%filepath)
+		print(final_path)
+
+
+		"""
+		for each folder that does not exist, 
+		create it if it's possible
+		"""
+		os.makedirs(filepath, exist_ok=True)
+		#save the file inside the new path
+		mc.file(save=True, type="mayaAscii")
+		mc.file(rename=final_path)
+		mc.file(save=True, type="mayaAscii")
+
+
+	def save_note_function(self, event):
+		#check the selection in file list
+		selection = mc.textScrollList(self.result_list, query=True, si=True)
+		if selection == None:
+			return
+		else:
+			#save a note for each file selected!
+			pipeline_path = mc.textField(self.project_label, query=True, text=True)
+			if (pipeline_path==None) or (pipeline_path == "None"):
+				mc.error("Impossible to save note!")
+				return
+			else:
+				#take the content of the scrollfield
+				note_content = mc.scrollField(self.note_textfield, query=True, text=True)
+				try:
+					with open(os.path.join(pipeline_path, "PipelineManagerData/NoteData.dll"), "rb") as read_file:
+						content = pickle.load(read_file)
+				except:
+					mc.warning("Note file corrupted or doesn't exists!")
+					content = {}
+
+				for file in selection:
+					content[file] = note_content
+
+				try:
+					with open(os.path.join(pipeline_path, "PipelineManagerData/NoteData.dll"), "wb") as save_file:
+						pickle.dump(content, save_file)
+				except:
+					mc.error("Impossible to save note file!")
+					return
+				else:
+					mc.warning("Note saved successfully!")
+					return
+
+
+	def search_for_note_function(self):
+		#try to open the note data
+		project_path = mc.textField(self.project_label, query=True, text=True)
+
+		try:
+			with open(os.path.join(project_path, "PipelineManagerData/NoteData.dll"), "rb") as read_file:
+				note_content = pickle.load(read_file)
+		except:
+			mc.warning("Impossible to read note file!")
+			return
+		else:
+			selection = mc.textScrollList(self.result_list, query=True, si=True)
+			if (selection == None):
+				return
+			selection = selection[0]
+			"""
+			print(note_content)
+			print(selection in note_content)
+			"""
+			if selection in note_content:
+				note = note_content[selection]
+				#replace the note in textfield
+				mc.scrollField(self.note_textfield, edit=True, clear=True)
+				mc.scrollField(self.note_textfield, edit=True, text=note)
+
+			else:
+				print("No note found!")
+
+
+
+	def create_template_function(self, event):
+		#get the name
+		template_name = mc.textField(self.template_textfield, query=True, text=True)
+		if (self.letter_verification_function(template_name) != True):
+			mc.error("You have to define a name for the new template!")
+			return
+
+		#get a folder
+		root_folder = mc.fileDialog2(fm=3, ds=1)	
+		if root_folder == None:
+			mc.error("You have to define a folder architecture to copy!")
+			return
+
+		#copy folders inside
+		folder_list = []
+		past_origin = os.getcwd()
+		root_folder = root_folder[0]
+		
+
+
+		root_folder_name = os.path.basename(root_folder)
+		for root, dirs, files in os.walk(root_folder):
+			for dir_name in dirs:
+				
+				path =(os.path.join(root, dir_name))
+				index = path.index(root_folder_name)
+
+				folder_list.append(path[index:].replace(root_folder_name, ""))
+		
+		#try to get the dictionnary from the template file in the pipeline
+		project_name = mc.textField(self.project_label, query=True, text=True)
+		if (project_name == None) or (project_name == "NOne"):
+			mc.error("Impossible to get project name!")
+			return
+		try:
+			with open(os.path.join(project_name, "PipelineManagerData/Template.dll"), "rb") as read_file:
+				template_dictionnary = pickle.load(read_file)
+			#add the new template in the dictionnary
+			template_dictionnary[template_name] = folder_list
+		except:
+			#create the new dictionnary instead
+			template_dictionnary = {
+				template_name : folder_list
+			}
+		#save the new dictionnary
+		try:
+			with open(os.path.join(project_name, "PipelineManagerData/Template.dll"), "wb") as save_file:
+				pickle.dump(template_dictionnary, save_file)
+			print("New template saved!")
+			self.reload_template_function()
+			return
+		except:
+			mc.error("Impossible to save the new template!")
+			return
+
+
+
+	def reload_template_function(self):
+
+		try:
+			project_name = mc.textField(self.project_label, query=True, text=True)
+			if (project_name == None) or (project_name == "NOne"):
+				mc.error("Impossible to get project name!")
+				return
+		except:
+			project_name = self.project_path
+		try:
+			with open(os.path.join(project_name, "PipelineManagerData/Template.dll"), "rb") as read_file:
+				template_dictionnary = pickle.load(read_file)
+			mc.textScrollList(self.template_textscrolllist, edit=True, removeAll=True, append=list(template_dictionnary.keys()))
+		except:
+			mc.error("Impossible to read template file!")
+			return
+
+
+
+	def create_new_item_template_function(self, event):
+		#get informations to create new item architecture
+		item_name = mc.textField(self.template_textfield, query=True, text=True)
+		template_name = mc.textScrollList(self.template_textscrolllist, query=True, si=True)
+		template_type = mc.textScrollList(self.type_list, query=True, si=True)
+
+		if self.letter_verification_function(item_name) != True:
+			mc.error("You have to define a name for the new item to create!")
+			return
+		if template_name == None:
+			mc.error("You have to pick a template!")
+			return
+		template_name = template_name[0]
+		if template_type == None:
+			mc.error("You have to pick a type!")
+			return
+
+
+		#print(self.settings_dictionnary[template_type[0]])
+		if (self.settings[template_type[0]][2] == None) or ("[key]" in self.settings[template_type[0]][2])==False:
+			mc.error("You have to define a default folder, with a [key] inside!")
+			return
+		starting_folder = self.settings[template_type[0]][2]
+		while os.path.basename(starting_folder) != "[key]":
+			starting_folder = os.path.dirname(starting_folder)
+
+		
+		if ("[Origin]" in starting_folder):
+			starting_folder = starting_folder.replace("[Origin]",self.project_path)
+			
+		if ("[key]" in starting_folder):
+			starting_folder = starting_folder.replace("[key]",template_type[0])
+		if ("[name]" in starting_folder):
+			starting_folder = starting_folder.replace("[name]", item_name)
+
+		if ("[mayaProjectName]" in starting_folder):
+			starting_folder = starting_folder.replace("[mayaProjectName]", self.additionnal_settings["mayaProjectName"])
+
+		if ("[type]" in starting_folder) or ("[editPublishFolder]" in starting_folder):
+			mc.error("Impossible to craete new item with that default folder architecture!")
+			return
+
+
+		print(starting_folder)
+
+		
+
+		#get the template folder list
+		try:
+			with open(os.path.join(self.project_path, "PipelineManagerData/Template.dll"), "rb") as read_file:
+				template_dictionnary = pickle.load(read_file)
+		except:
+			mc.error("Impossible to read template data!")
+			return
+
+		#print(template_name)
+		#print(template_dictionnary)
+
+		if (template_name in template_dictionnary) == False:
+			mc.error("Impossible to get template informations!")
+			return
+		else:
+			template_folder_list = template_dictionnary[template_name]
+
+			folder_to_create = []
+			for folder in template_folder_list:
+				folder_full_path = starting_folder+folder
+				folder_to_create.append(folder_full_path.replace('\\', '/'))
+
+			#create the folder list
+			for folder in folder_to_create:
+				try:
+					os.mkdir(folder)
+					print("Folder created [%s]"%folder)
+				except:
+					mc.warning("Failed to create folder [%s]"%folder)
+					continue
+
+
 
 
 		
