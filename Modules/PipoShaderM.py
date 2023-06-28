@@ -1,4 +1,9 @@
 #coding: utf-8
+
+#Copyright 2023, Robin Delaporte AKA Quazar, All rights reserved.
+
+
+
 import maya.cmds as mc
 import pymel.core as pm
 import os

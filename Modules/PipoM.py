@@ -1,4 +1,8 @@
 #coding: utf-8
+
+#Copyright 2023, Robin Delaporte AKA Quazar, All rights reserved.
+
+
 import maya.cmds as mc
 import pymel.core as pm
 import os
@@ -39,17 +43,6 @@ publish export tasklist
 
 
 
-
-"""
-import PyToolBar_03.Modules.PipelineManagerM
-import PyToolBar_03.Modules.PipelineShaderM
-import PyToolBar_03.Modules.PipelineM
-import imp
-
-imp.reload(PyToolBar_03.Modules.PipelineManagerM)
-imp.reload(PyToolBar_03.Modules.PipelineShaderM)
-imp.reload(PyToolBar_03.Modules.PipelineM)
-"""
 
 
 

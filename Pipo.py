@@ -1,6 +1,8 @@
 #coding: utf-8
 #PIPELINE MANAGER
 
+#Copyright 2023, Robin Delaporte AKA Quazar, All rights reserved.
+
 
 
 #archive documentation : https://realpython.com/python-zipfile/
@@ -34,8 +36,8 @@ if (os.getcwd() in sys.path)==False:
 
 
 
-from PipelineManager.Modules.PipelineM import PipelineApplication 
-from PipelineManager.Modules.PipelineShaderM import PipelineShaderApplication
+from Pipo.Modules.PipoM import PipelineApplication 
+from Pipo.Modules.PipoShaderM import PipelineShaderApplication
 
 
 
@@ -75,9 +77,9 @@ class PipelineGuiApplication(PipelineApplication, PipelineShaderApplication):
 		#define the program folder
 		self.program_folder = None
 		for path in sys.path:
-			if os.path.isdir(os.path.join(path, "PipelineManager"))==True:
-				os.chdir(os.path.join(path, "PipelineManager"))
-				self.program_folder = os.path.join(path, "PipelineManager")
+			if os.path.isdir(os.path.join(path, "Pipo"))==True:
+				os.chdir(os.path.join(path, "Pipo"))
+				self.program_folder = os.path.join(path, "Pipo")
 				mc.warning("Program folder defined")
 		if self.program_folder == None:
 			mc.warning("The program folder wasn't defined!")
@@ -208,7 +210,7 @@ class PipelineGuiApplication(PipelineApplication, PipelineShaderApplication):
 
 
 	def build_pipeline_interface_function(self):
-		self.main_window = mc.window(sizeable=False, title="PipelineManager - By Quazar", width=self.window_width, height=self.window_height)
+		self.main_window = mc.window(sizeable=False, title="Pipo - Written by Quazar", width=self.window_width, height=self.window_height)
 		self.scrollbar = mc.scrollLayout(width=self.window_width + 40, parent=self.main_window, resizeCommand=self.resize_command_function)
 		self.main_column = mc.columnLayout(adjustableColumn=True, parent=self.scrollbar)
 		self.add_log_content_function("Interface built")
