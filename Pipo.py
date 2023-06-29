@@ -275,10 +275,10 @@ class PipelineGuiApplication(PipelineApplication, PipelineShaderApplication):
 		self.note_column = mc.columnLayout(adjustableColumn=True, parent=self.assets_main_rightcolumn)
 		self.note_textfield = mc.scrollField(parent=self.note_column, height=80, wordWrap=True, font="plainLabelFont", enterCommand=self.save_note_function)
 		self.assets_prod_column = mc.rowColumnLayout(numberOfColumns=4, parent=self.assets_main_rightcolumn, columnWidth=((1, self.window_width/6), (2, self.window_width/6), (3, self.window_width/6)))
-		self.type_list=mc.textScrollList(allowMultiSelection=True, parent=self.assets_prod_column, height=self.window_height, selectCommand=self.display_new_list_function, append=self.type_list_value)
-		self.name_list=mc.textScrollList(allowMultiSelection=True, parent=self.assets_prod_column, height=self.window_height, selectCommand=self.display_new_list_function)
-		self.kind_list=mc.textScrollList(allowMultiSelection=True, parent=self.assets_prod_column, height=self.window_height, selectCommand=self.display_new_list_function, append=self.file_type)
-		self.result_list=mc.textScrollList(allowMultiSelection=True, parent=self.assets_prod_column, height=self.window_height, doubleClickCommand=self.open_location_function, selectCommand=self.search_for_thumbnail_function)
+		self.type_list=mc.textScrollList(allowMultiSelection=True, height=470,parent=self.assets_prod_column, selectCommand=self.display_new_list_function, append=self.type_list_value)
+		self.name_list=mc.textScrollList(allowMultiSelection=True, height=470, parent=self.assets_prod_column, selectCommand=self.display_new_list_function)
+		self.kind_list=mc.textScrollList(allowMultiSelection=True, height=470, parent=self.assets_prod_column, selectCommand=self.display_new_list_function, append=self.file_type)
+		self.result_list=mc.textScrollList(allowMultiSelection=True, height=470, parent=self.assets_prod_column, doubleClickCommand=partial(self.open_location_function, "folder", "event"), selectCommand=self.search_for_thumbnail_function)
 
 		
 		mc.rowColumnLayout(self.assets_prod_column, edit=True, adjustableColumn=4)
@@ -305,6 +305,7 @@ class PipelineGuiApplication(PipelineApplication, PipelineShaderApplication):
 		mc.separator(style="none", height=10, parent=self.assets_main_leftcolumn)
 		mc.button(label="Save Scene", parent=self.assets_main_leftcolumn, command=self.save_current_scene_function)
 		mc.button(label="Set Project", parent=self.assets_main_leftcolumn, command=self.set_project_function)
+		mc.button(label="Open scene", parent=self.assets_main_leftcolumn, command=partial(self.open_location_function, "open"))
 
 		#CREATE NEW TEMPLATE
 		#SAVE NEW TEMPLATE
@@ -402,7 +403,7 @@ class PipelineGuiApplication(PipelineApplication, PipelineShaderApplication):
 
 		mc.separator(style="none", height=20, parent=self.export_leftcolumn)
 
-		self.export_edit_frame = mc.frameLayout(label="Export edit files", parent=self.export_leftcolumn, collapsable=True, collapse=True)
+		self.export_edit_frame = mc.frameLayout(label="Export edit files", parent=self.export_leftcolumn, collapsable=True, collapse=False)
 		mc.text(label="File Name", align="left", parent=self.export_edit_frame)
 		self.export_edit_name_checkbox = mc.checkBox(label="Keep same name", value=True, parent=self.export_edit_frame)
 		self.export_edit_name_textfield = mc.textField(parent=self.export_edit_frame)
@@ -420,11 +421,13 @@ class PipelineGuiApplication(PipelineApplication, PipelineShaderApplication):
 		self.export_edit_shot_intfield = mc.intField(parent=self.export_edit_frame)
 		
 		
-		mc.button(label="Export", parent=self.export_edit_frame, command=self.export_edit_function)
+		mc.button(label="Export", parent=self.export_edit_frame, command=partial(self.export_edit_function, "standard"))
+		mc.button(label="Export selected", parent=self.export_edit_frame, command=partial(self.export_edit_function, "selection"),backgroundColor=(0.492,0.047,0.103))
 
 
-		self.export_publish_frame = mc.frameLayout(label="Export publish files", parent=self.export_leftcolumn, collapsable=True, collapse=False)
+		self.export_publish_frame = mc.frameLayout(label="Export publish files", parent=self.export_leftcolumn, collapsable=True, collapse=True)
 		mc.button(label="Export Publish", parent=self.export_publish_frame, command=self.export_publish_function)
+		mc.button(label="Publish selected", parent=self.export_publish_frame,backgroundColor=(0.492,0.047,0.103))
 
 
 

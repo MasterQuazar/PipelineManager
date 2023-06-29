@@ -1434,7 +1434,8 @@ class PipelineApplication:
 
 
 
-	def open_location_function(self):
+	def open_location_function(self, data, event):
+		print(data, event)
 		#check selection in result textscrolllist
 		selection = mc.textScrollList(self.result_list, query=True, si=True)[0]
 		#check the location of the file in the pipeline
@@ -1444,7 +1445,23 @@ class PipelineApplication:
 			for file in f:
 				if os.path.basename(file) == selection:
 					#open a browser with the location of that file
-					mc.fileDialog2(ds=1, fm=0, dir=r)
+					if data == "folder":
+						mc.fileDialog2(ds=1, fm=0, dir=r)
+					else:
+						#open the file
+						try:
+							mc.file(save=True,type="mayaAscii")
+						except:
+							mc.warning("Impossible to save the current scene!")
+							return
+
+						try:
+							print(os.path.join(r, file))
+							print(os.path.isfile(os.path.join(r, file)))	
+							mc.file(os.path.join(r, file), force=True,o=True)
+						except:
+							mc.error("Impossible to open the file!")
+					break
 
 
 
@@ -1663,7 +1680,8 @@ class PipelineApplication:
 
 			splited_nomenclature = nomenclature.split("_")
 			splited_filename = os.path.splitext(os.path.basename(mc.file(query=True, sn=True)))[0].split("_")
-					
+			
+			print(type_selection[0])
 			print(splited_nomenclature)
 			print(splited_filename)
 
@@ -1705,7 +1723,7 @@ class PipelineApplication:
 									else:
 										actual_name = splited_filename[setting_content[0].split("_").index("[name]")]
 						if( actual_keyword == None) or (actual_name == None):
-							mc.error("Impossible to get the actual name of the file!")
+							mc.error("Impossible to get the actual name of the file to create the filename!")
 							return
 						else:
 							print(actual_name)
@@ -1733,19 +1751,19 @@ class PipelineApplication:
 
 				if splited_nomenclature[i] == "[sqversion]":
 					content = str(mc.intField(self.export_edit_sequence_intfield, query=True, value=True))
-					if len(list(str(content)))==1:
-						content == "sq00%s"%content 
+					if len(list(content))==1:
+						value = "sq00%s"%content 
 					else:
-						content == "sq0%s"%content 
-					final_filename.append(content)
+						value = "sq0%s"%content
+					final_filename.append(value)
 
 				if splited_nomenclature[i] == "[shversion]":
 					content = str(mc.intField(self.export_edit_shot_intfield, query=True, value=True))
-					if len(list(str(content)))==1:
-						content == "sh00%s"%content 
+					if len(list(content))==1:
+						value = "sh00%s"%content 
 					else:
-						content == "sh0%s"%content 
-					final_filename.append(content)
+						value = "sh0%s"%content
+					final_filename.append(value)
 
 				if splited_nomenclature[i] == "[project]":
 					if self.project_path == None:
@@ -1837,7 +1855,7 @@ class PipelineApplication:
 									if word == setting_content[1]:
 										actual_keyword = setting_content[1]
 										if ("[name]" in setting_content[0].split("_")) == False:
-											mc.error("Impossible to get the name from the actual filename!")
+											mc.error("Impossible to get the name from the actual filename to create the path!")
 											return
 										else:
 											actual_name = splited_filename[setting_content[0].split("_").index("[name]")]
@@ -1894,6 +1912,9 @@ class PipelineApplication:
 					final_filepath.append(splited_default_folder[i])
 
 			return "/".join(final_filepath)
+
+
+
 		
 
 
@@ -1901,7 +1922,7 @@ class PipelineApplication:
 
 
 
-	def export_edit_function(self, event):
+	def export_edit_function(self, info, event):
 		filename = self.define_export_nomenclature_function("edit")
 		filepath = self.define_export_path_function(filename, "edit")
 		final_path = os.path.join(filepath, filename)
@@ -1910,28 +1931,45 @@ class PipelineApplication:
 		
 		#save the current scene with current filename
 		
-		try:
-			mc.file(save=True, type="mayaAscii")
-		except:
-			mc.warning("Impossible to save the current file before creating edit!")
+		
 		
 
 		
-		#save the new scene with the new name
-		#try to create all folder and save the file
-		
-		try:
-			os.makedirs(filepath, exist_ok=True)
-			mc.file(rename=final_path)
-			mc.file(save=True, type="mayaAscii")
+		if info == "standard":
+			#save the new scene with the new name
+			#try to create all folder and save the file
+			
+			try:
+				mc.file(save=True, type="mayaAscii")
+			except:
+				mc.warning("Impossible to save the current file before creating edit!")
+			try:
+				os.makedirs(filepath, exist_ok=True)
+				mc.file(rename=final_path)
+				mc.file(save=True, type="mayaAscii")
 
-			mc.warning("File saved successfully!")
-			print(final_path)
-			return
-		except:
-			mc.error("Impossible to save the file!")
-			return
-		
+				mc.warning("File saved successfully!")
+				print(final_path)
+				return
+			except:
+				mc.error("Impossible to save the file!")
+				return
+		else:
+			#get maya selection
+			selection = mc.ls(sl=True)
+			if (len(selection))==0:
+				mc.error("No item selected to export!")
+				return
+			try:
+				os.makedirs(filepath, exist_ok=True)
+				mc.file(final_path,force=True, shader=True, pr=True, es=True, type="mayaAscii")
+				mc.warning("Selection exported successfully!")
+				print(final_path)
+				return
+			except:
+				mc.error("Impossible to export selection!")
+				return
+			
 
 	def create_path_function(self, event):
 		os.makedirs(path, exist_ok=True)
