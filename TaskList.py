@@ -33,13 +33,14 @@ WORK IN PROGRESS :
 
 	- archive system (for deleted elements or for backup)
 	- logs system (pushed)
-	- resolve auto export path nomenclature (on sequence / shot folders)
 	- save project template?
 	- create new item project
 
+	- render frames checker program (check for missing frames) --> with render / shader module
 	- search for textures system
 	- connect textures system
 
+	- file renamer pushed system
 	- archive in pipeline
 	- archive in project
 	- search for archive
